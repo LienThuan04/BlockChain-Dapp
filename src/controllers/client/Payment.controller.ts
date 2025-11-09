@@ -55,17 +55,25 @@ const createPaypalOrder = async (req: Request, res: Response) => {
         if (!process.env.PAYPAL_CLIENT_SECRET) missing.push('PAYPAL_CLIENT_SECRET');
         if (!process.env.URL) missing.push('URL');
         if (missing.length) {
-            console.error('Missing PayPal environment variables:', missing.join(', '));
+            console.error('❌ [PAYPAL] Missing PayPal environment variables:', missing.join(', '));
             return res.status(500).json({ error: 'Tạo đơn PayPal thất bại', message: `Missing environment variables: ${missing.join(', ')}` });
         }
 
+        // Log credentials info (without values) for debugging
+        console.log('✅ [PAYPAL] PAYPAL_CLIENT_ID length:', process.env.PAYPAL_CLIENT_ID?.length || 0);
+        console.log('✅ [PAYPAL] PAYPAL_CLIENT_SECRET length:', process.env.PAYPAL_CLIENT_SECRET?.length || 0);
+
         // Lấy tổng tiền từ form hoặc session/cart
-        console.log('req.body:', req.body);
-    // Ensure totalPrice is parsed even if it contains thousand separators or is a string
-    const rawTotal = req.body.totalPrice;
-    const parsedTotal = rawTotal == null ? 0 : Number(String(rawTotal).replace(/[^0-9.-]+/g, ''));
-    const totalVND = Number.isFinite(parsedTotal) ? parsedTotal : 0; // hoặc lấy từ DB/cart
+        console.log('📥 [PAYPAL] req.body:', req.body);
+        // Ensure totalPrice is parsed even if it contains thousand separators or is a string
+        const rawTotal = req.body.totalPrice;
+        const parsedTotal = rawTotal == null ? 0 : Number(String(rawTotal).replace(/[^0-9.-]+/g, ''));
+        const totalVND = Number.isFinite(parsedTotal) ? parsedTotal : 0; // hoặc lấy từ DB/cart
+        console.log('💰 [PAYPAL] Total VND:', totalVND);
+        
         const totalUSD = convertVNDToUSD(totalVND);
+        console.log('💵 [PAYPAL] Total USD:', totalUSD);
+        
         const receiverName = req.body.receiverName || 'Khách hàng';
         const { receiverPhone, receiverAddress, receiverNote, paymentMethod, receiverEmail, ListIdDetailCartPay } = req?.body;
         const rawList = Array.isArray(ListIdDetailCartPay) ? ListIdDetailCartPay : [];
@@ -78,6 +86,8 @@ const createPaypalOrder = async (req: Request, res: Response) => {
                 productVariantId: Number(item.productVariantId) 
             };
         });
+        console.log('📦 [PAYPAL] ListIdDetailOrder:', ListIdDetailOrder);
+        
         if (req.session) {
             req.session.orderInfo = {
                 receiverName,
@@ -89,7 +99,9 @@ const createPaypalOrder = async (req: Request, res: Response) => {
                 totalVND,
                 ListIdDetailOrder: ListIdDetailOrder
             };
+            console.log('💾 [PAYPAL] Order info saved to session');
         };
+        
         const request = new paypal.orders.OrdersCreateRequest();
         request.prefer('return=representation');
         const paypalRequestBody = {
@@ -104,25 +116,49 @@ const createPaypalOrder = async (req: Request, res: Response) => {
                 cancel_url: process.env.URL + '/checkout',
             }
         };
-        console.log('PayPal request body:', JSON.stringify(paypalRequestBody, null, 2));
+        console.log('📝 [PAYPAL] Request body:', JSON.stringify(paypalRequestBody, null, 2));
         request.requestBody(paypalRequestBody);
 
+        console.log('🚀 [PAYPAL] Executing PayPal order creation...');
         const order = await client.execute(request);
-        console.log('PayPal raw response:', JSON.stringify(order, null, 2));
+        console.log('📨 [PAYPAL] PayPal response received');
+        console.log('📨 [PAYPAL] Full response:', JSON.stringify(order, null, 2));
+        
         const approvalUrl = order?.result?.links?.find((link: { rel: string; href: string }) => link.rel === 'approve')?.href
             || order?.result?.links?.find((link: { rel: string; href: string }) => link.rel === 'approval_url')?.href
             || null;
-        console.log('PayPal approval URL:', approvalUrl);
+        console.log('🔗 [PAYPAL] Approval URL:', approvalUrl);
+        
         if (!approvalUrl) {
             // If no approval URL, return details to help debugging
+            console.error('❌ [PAYPAL] No approval URL found in response');
+            console.error('❌ [PAYPAL] Response links:', order?.result?.links);
             return res.status(500).json({ error: 'No approval URL returned by PayPal', paypalResult: order?.result });
         }
 
+        console.log('✅ [PAYPAL] Order created successfully:', order?.result?.id);
         return res.json({ approvalUrl, orderId: order?.result?.id });
     } catch (err: any) {
-        console.error('Error creating PayPal order:', err?.stack || err);
+        console.error('❌ [PAYPAL] Error creating PayPal order');
+        console.error('❌ [PAYPAL] Error message:', err?.message || String(err));
+        console.error('❌ [PAYPAL] Error stack:', err?.stack);
+        console.error('❌ [PAYPAL] Full error object:', err);
+        
+        // Try to extract more details from PayPal API error
+        if (err?.statusCode) {
+            console.error('❌ [PAYPAL] HTTP Status Code:', err.statusCode);
+        }
+        if (err?.headers) {
+            console.error('❌ [PAYPAL] Response headers:', err.headers);
+        }
+        
         // Return helpful error info for debugging (avoid leaking secrets in production)
-        return res.status(500).json({ error: 'Tạo đơn PayPal thất bại', message: err?.message || String(err) });
+        return res.status(500).json({ 
+            error: 'Tạo đơn PayPal thất bại', 
+            message: err?.message || String(err),
+            statusCode: err?.statusCode,
+            details: process.env.NODE_ENV === 'development' ? err : undefined
+        });
     }
 };
 
@@ -132,8 +168,13 @@ const PaypalSuccess = async (req: Request, res: Response) => {
     const Target = await GetAllTargetForClient();
     const Factory = await GetAllFactoryForClient(); 
     const { orderInfo } = req?.session;
-    console.log('Query parameters:', req.query, orderInfo);
-    if(!user) return res.redirect('/login');
+    console.log('✅ [PAYPAL] PayPal Success callback - Query parameters:', req.query);
+    console.log('✅ [PAYPAL] Order info from session:', orderInfo ? 'Found' : 'Not found');
+    
+    if(!user) {
+        console.warn('⚠️ [PAYPAL] No user in session, redirecting to login');
+        return res.redirect('/login');
+    }
     
     // Handle both PayPal and Crypto payments
     if (orderInfo) {
@@ -141,15 +182,19 @@ const PaypalSuccess = async (req: Request, res: Response) => {
         // Verify PayPal order status before placing the order on our side
         try {
             const token = String(req.query.token || req.query.token || '');
+            console.log('🔍 [PAYPAL] Token:', token ? `${token.substring(0, 20)}...` : 'EMPTY');
+            
             let paypalOrder: any = null;
             if (token) {
                 try {
+                    console.log('📡 [PAYPAL] Fetching PayPal order details...');
                     const getRequest = new paypal.orders.OrdersGetRequest(token);
                     const getResp = await client.execute(getRequest);
                     paypalOrder = getResp?.result;
-                    console.log('PayPal order fetched at return:', JSON.stringify(paypalOrder, null, 2));
+                    console.log('✅ [PAYPAL] PayPal order fetched, status:', paypalOrder?.status);
+                    console.log('✅ [PAYPAL] Full order details:', JSON.stringify(paypalOrder, null, 2));
                 } catch (err) {
-                    console.warn('Could not fetch PayPal order with token, will attempt capture if possible', err);
+                    console.warn('⚠️ [PAYPAL] Could not fetch PayPal order with token, will attempt capture if possible:', err instanceof Error ? err.message : err);
                 }
             }
 
@@ -160,23 +205,27 @@ const PaypalSuccess = async (req: Request, res: Response) => {
             if (paypalOrder && (paypalOrder.status === 'COMPLETED' || paypalOrder.status === 'APPROVED')) {
                 paymentRef = `PayPalOrder:${paypalOrder.id}`;
                 paymentStatus = 'PAYMENT_PAID';
+                console.log('✅ [PAYPAL] Order already APPROVED/COMPLETED');
             } else if (token) {
                 try {
+                    console.log('💳 [PAYPAL] Attempting to capture PayPal order...');
                     const captureReq = new paypal.orders.OrdersCaptureRequest(token);
                     // typings require a RequestData but PayPal SDK allows an empty body for capture; cast to any to avoid TS error
                     (captureReq as any).requestBody({});
                     const captureResp = await client.execute(captureReq);
-                    console.log('PayPal capture response:', JSON.stringify(captureResp?.result, null, 2));
+                    console.log('✅ [PAYPAL] Capture response status:', captureResp?.result?.status);
+                    console.log('✅ [PAYPAL] Capture response:', JSON.stringify(captureResp?.result, null, 2));
                     paymentRef = `PayPalCapture:${captureResp?.result?.id || token}`;
                     paymentStatus = captureResp?.result?.status === 'COMPLETED' ? 'PAYMENT_PAID' : 'PENDING';
                 } catch (capErr) {
-                    console.error('Error capturing PayPal order:', capErr);
+                    console.error('❌ [PAYPAL] Error capturing PayPal order:', capErr instanceof Error ? capErr.message : capErr);
                     // proceed but mark payment as pending
                     paymentRef = `TokenPaypal:${token}`;
                     paymentStatus = 'PENDING';
                 }
             }
 
+            console.log('🔖 [PAYPAL] Payment ref:', paymentRef, 'Status:', paymentStatus);
             const orderResult = await PlaceOrder(user, {
                 receiverName: orderInfo.receiverName || '',
                 receiverPhone: orderInfo.receiverPhone || '',
@@ -189,6 +238,8 @@ const PaypalSuccess = async (req: Request, res: Response) => {
                 ListIdCartDetail: orderInfo.ListIdDetailOrder
             });
 
+            console.log('📋 [PAYPAL] Order created:', orderResult ? 'Success' : 'Failed');
+            
         const CartUserId = await FindCartForUserId(user.id) ?? null;
         const UserQuantityCart = {...user, quantityCart: CartUserId ? CartUserId.quantity : 0 };
         
@@ -197,6 +248,7 @@ const PaypalSuccess = async (req: Request, res: Response) => {
             delete req.session.orderInfo;
         }
         
+        console.log('✅ [PAYPAL] PayPal flow complete, rendering success page');
         return res.render('client/product/thanksOrder.ejs', { 
             status: 'Success', 
             totalVND: orderInfo.totalVND, 
@@ -206,7 +258,9 @@ const PaypalSuccess = async (req: Request, res: Response) => {
         });
 
         } catch (err) {
-            console.error('Error processing PayPal success callback:', err);
+            console.error('❌ [PAYPAL] Error processing PayPal success callback:', err instanceof Error ? err.message : err);
+            console.error('❌ [PAYPAL] Full error:', err);
+            
             // Render a failure page or show pending status
             const CartUserId = await FindCartForUserId(user.id) ?? null;
             const UserQuantityCart = {...user, quantityCart: CartUserId ? CartUserId.quantity : 0 };
@@ -222,6 +276,7 @@ const PaypalSuccess = async (req: Request, res: Response) => {
     } else {
         // For crypto payments - order already created on client side
         // Just show success page with Pending status
+        console.log('ℹ️ [PAYPAL] No order info in session - likely crypto payment');
         const CartUserId = await FindCartForUserId(user.id) ?? null;
         const UserQuantityCart = {...user, quantityCart: CartUserId ? CartUserId.quantity : 0 };
         
@@ -241,13 +296,22 @@ export { PostPlaceOrder, createPaypalOrder, PaypalSuccess }
 // Debug endpoint to test PayPal credentials/connectivity
 const DebugPaypal = async (req: Request, res: Response) => {
     try {
+        console.log('🔧 [PAYPAL-DEBUG] Starting debug check...');
+        
         const missing: string[] = [];
         if (!process.env.PAYPAL_CLIENT_ID) missing.push('PAYPAL_CLIENT_ID');
         if (!process.env.PAYPAL_CLIENT_SECRET) missing.push('PAYPAL_CLIENT_SECRET');
         if (!process.env.URL) missing.push('URL');
+        
         if (missing.length) {
+            console.error('🔧 [PAYPAL-DEBUG] Missing env variables:', missing.join(', '));
             return res.status(500).json({ ok: false, error: 'Missing env', missing });
         }
+
+        console.log('🔧 [PAYPAL-DEBUG] Credentials found:');
+        console.log('  - PAYPAL_CLIENT_ID length:', process.env.PAYPAL_CLIENT_ID?.length);
+        console.log('  - PAYPAL_CLIENT_SECRET length:', process.env.PAYPAL_CLIENT_SECRET?.length);
+        console.log('  - URL:', process.env.URL);
 
         const request = new paypal.orders.OrdersCreateRequest();
         request.prefer('return=representation');
@@ -259,12 +323,36 @@ const DebugPaypal = async (req: Request, res: Response) => {
                 cancel_url: process.env.URL + '/checkout'
             }
         } as any;
+        console.log('🔧 [PAYPAL-DEBUG] Request body:', JSON.stringify(body, null, 2));
+        
         request.requestBody(body);
+        console.log('🔧 [PAYPAL-DEBUG] Executing request...');
+        
         const order = await client.execute(request);
-        return res.json({ ok: true, result: order?.result });
+        
+        console.log('🔧 [PAYPAL-DEBUG] Success! Response:', JSON.stringify(order?.result, null, 2));
+        return res.json({ 
+            ok: true, 
+            result: order?.result,
+            message: 'PayPal credentials are valid and API is accessible'
+        });
     } catch (err: any) {
-        console.error('Debug PayPal error:', err?.stack || err);
-        return res.status(500).json({ ok: false, error: err?.message || String(err) });
+        console.error('🔧 [PAYPAL-DEBUG] Error:', err?.message || String(err));
+        console.error('🔧 [PAYPAL-DEBUG] Error stack:', err?.stack);
+        console.error('🔧 [PAYPAL-DEBUG] Status code:', err?.statusCode);
+        console.error('🔧 [PAYPAL-DEBUG] Full error:', err);
+        
+        return res.status(500).json({ 
+            ok: false, 
+            error: err?.message || String(err),
+            statusCode: err?.statusCode,
+            hint: 'Check PayPal credentials and ensure they match your sandbox/live environment',
+            details: process.env.NODE_ENV === 'development' ? {
+                message: err?.message,
+                statusCode: err?.statusCode,
+                httpStatusCode: err?.httpStatusCode
+            } : undefined
+        });
     }
 };
 
