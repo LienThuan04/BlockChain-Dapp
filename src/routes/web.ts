@@ -58,7 +58,10 @@ const webroutes = (app: Express) => {
     router.get('/review/:id', GetReviewPage);
     router.post('/review-product/:id', PostReviewProduct);
     router.post('/My-Account/change-password', PostChangePassword);
-    router.post('/cancel-order/:id', PostCancelOrder);
+    router.post('/cancel-order/:id', (req: Request, res: Response, next) => {
+        // Wrap async handler to satisfy TypeScript overloads
+        Promise.resolve(PostCancelOrder(req, res)).catch(next);
+    });
 
     //Payment for client
     router.post('/place-order', PostPlaceOrder);

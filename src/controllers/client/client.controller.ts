@@ -295,11 +295,41 @@ const PostCancelOrder = async (req: Request, res: Response) => {
     if (isNaN(IdToNumber) || IdToNumber <= 0) {
         return res.render('status/500.ejs');
     };
-    const result = await CancelOrderById(IdToNumber, user);
-    if (!result) {
+    
+    try {
+        const result = await CancelOrderById(IdToNumber, user);
+        if (!result) {
+            // If AJAX request, return JSON
+            if (req.headers['accept']?.includes('application/json')) {
+                return res.status(500).json({ 
+                    success: false, 
+                    message: 'Hủy đơn hàng thất bại' 
+                });
+            }
+            return res.render('status/500.ejs');
+        };
+        
+        // If AJAX request, return JSON with success message
+        if (req.headers['accept']?.includes('application/json')) {
+            return res.json({ 
+                success: true, 
+                message: 'Hủy đơn hàng và hoàn tiền thành công!',
+                orderId: IdToNumber
+            });
+        }
+        
+        // Otherwise redirect as before
+        return res.redirect(`/order-history/${IdToNumber}?refund=success`);
+    } catch (error) {
+        console.error('Error in PostCancelOrder:', error);
+        if (req.headers['accept']?.includes('application/json')) {
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Lỗi hệ thống khi hủy đơn hàng' 
+            });
+        }
         return res.render('status/500.ejs');
-    };
-    return res.redirect(`/order-history/${IdToNumber}`);
+    }
 };
 
 export {

@@ -157,6 +157,19 @@ export const getTransactionDetails = async (req: Request, res: Response): Promis
             return;
         }
 
+        // Get crypto transaction for this order to get actual SGB amount
+        const cryptoTx = await prisma.cryptoTransaction.findFirst({
+            where: { orderId: order.id },
+            include: { cryptocurrency: true }
+        });
+
+        // Get exchange rate from active cryptocurrency
+        const activeCrypto = await prisma.cryptocurrency.findFirst({ where: { isActive: true } });
+        const exchangeRate = activeCrypto?.priceVND || 8750;
+
+        // Use actual amount from crypto transaction, or calculate from total price
+        const sgbAmount = cryptoTx?.amount || (order.totalPrice / exchangeRate).toFixed(4);
+
         res.json({
             orderId: order.id,
             user: {
@@ -175,7 +188,7 @@ export const getTransactionDetails = async (req: Request, res: Response): Promis
                 method: order.paymentMethod,
                 status: order.paymentStatus,
                 totalPrice: order.totalPrice,
-                sgbAmount: (order.totalPrice / 300000).toFixed(4),
+                sgbAmount: sgbAmount,
                 transactionHash: order.paymentRef
             },
             orderDetails: ((order as any).orderDetails || []).map((item: any) => ({

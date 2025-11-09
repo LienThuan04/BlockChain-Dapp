@@ -500,6 +500,8 @@ const GetReviewedFormUser = async (orderId: number, user: UserRole) => {
     return false;
 };
 
+import { client as paypalClient } from 'config/paypal';
+
 const CancelOrderById = async (orderId: number, user: UserRole) => {
     // Kiểm tra đơn hàng có thuộc về user không
     const order = await prisma.order.findUnique({
@@ -514,15 +516,160 @@ const CancelOrderById = async (orderId: number, user: UserRole) => {
     if (!order) {
         return false;
     }
-    // Xóa đơn hàng
-    await prisma.order.update({
-        where: {
-            id: orderId
-        },
-        data: {
-            statusOrder: 'CANCELLED'
+    // If paid via PayPal, attempt refund
+    try {
+        if (order.paymentMethod === 'PAYPAL' && order.paymentStatus === 'PAYMENT_PAID' && order.paymentRef) {
+            // paymentRef may contain 'PayPalCapture:<captureId>' or 'PayPalOrder:<orderId>'
+            const ref = order.paymentRef as string;
+            const captureMatch = ref.match(/PayPalCapture:?(.*)/i);
+            const captureId = captureMatch ? captureMatch[1] : null;
+            if (captureId) {
+                try {
+                    const refundReq = new (require('@paypal/checkout-server-sdk').payments.CapturesRefundRequest)(captureId);
+                    // PayPal SDK typings require a request body; an empty body is acceptable for full refund in many cases
+                    (refundReq as any).requestBody({});
+                    const refundResp = await paypalClient.execute(refundReq);
+                    console.log('PayPal refund response for order', orderId, JSON.stringify(refundResp?.result));
+                    // update paymentStatus
+                    await prisma.order.update({ where: { id: orderId }, data: { paymentStatus: 'REFUNDED' } });
+                } catch (refundErr) {
+                    console.error('Error refunding PayPal capture for order', orderId, refundErr);
+                    // proceed to cancel but keep paymentStatus as-is or mark as REFUND_FAILED
+                    await prisma.order.update({ where: { id: orderId }, data: { paymentStatus: 'REFUND_FAILED' } });
+                }
+            }
         }
-    });
+    } catch (e) {
+        console.error('Unexpected error during refund process for order', orderId, e);
+    }
+
+    // If paid via CRYPTO, attempt on-chain refund from active admin wallet to buyer
+    try {
+        if (order.paymentMethod === 'CRYPTO' && order.paymentStatus === 'PAID') {
+            console.log('🔄 [REFUND] Starting crypto refund for order', orderId);
+            const origTx = await prisma.cryptoTransaction.findFirst({ where: { orderId: order.id }, include: { cryptocurrency: true } });
+            if (origTx && origTx.fromAddress) {
+                const buyerAddress = origTx.fromAddress;
+                const amountStr = origTx.amount || '0';
+                console.log('💰 [REFUND] Buyer address:', buyerAddress, 'Amount:', amountStr);
+                const cryptoMeta = origTx.cryptocurrency;
+                const rpc = cryptoMeta?.rpcUrl || process.env.ETH_NODE_URL || 'http://localhost:8545';
+                console.log('🌐 [REFUND] RPC:', rpc);
+                const decimals = cryptoMeta?.decimals ?? 18;
+
+                // Get admin active wallet with privateKey
+                const activeWalletRecord = await prisma.cryptoWallet.findFirst({ where: { isActive: true } });
+                console.log('🔑 [REFUND] Admin wallet found:', !!activeWalletRecord);
+                if (!activeWalletRecord || !activeWalletRecord.privateKey) {
+                    console.error('❌ [REFUND] No active admin wallet or privateKey available');
+                } else {
+                    const adminPrivateKey = activeWalletRecord.privateKey;
+                    const adminAddress = activeWalletRecord.walletAddress;
+                    console.log('👛 [REFUND] Admin address:', adminAddress);
+
+                    try {
+                        const Web3 = require('web3');
+                        const web3 = new Web3(rpc);
+                        console.log('✅ [REFUND] Web3 instance created');
+
+                        // helper: convert decimal string amount to integer base units (BigInt)
+                        function amountToBase(amountDecimalStr: string, dec: number) {
+                            const parts = amountDecimalStr.split('.');
+                            const intPart = parts[0] || '0';
+                            const fracPart = parts[1] || '';
+                            const fracPadded = (fracPart + '0'.repeat(dec)).slice(0, dec);
+                            const baseStr = intPart + fracPadded;
+                            // remove leading zeros
+                            return BigInt(baseStr.replace(/^0+/, '') || '0');
+                        }
+
+                        const baseAmount = amountToBase(amountStr, decimals);
+                        console.log('📊 [REFUND] Amount conversion:', amountStr, '->', baseAmount.toString(), 'with', decimals, 'decimals');
+
+                        console.log('🔄 Crypto refund: Getting nonce and gas price...');
+                        const nonce = await web3.eth.getTransactionCount(adminAddress, 'pending');
+                        const gasPrice = await web3.eth.getGasPrice();
+                        console.log('⛽ Nonce:', nonce, 'GasPrice:', gasPrice);
+                        
+                        const txParams: any = {
+                            from: adminAddress,
+                            to: buyerAddress,
+                            value: web3.utils.toHex(baseAmount.toString()),
+                            nonce: web3.utils.toHex(nonce),
+                            gasPrice: web3.utils.toHex(gasPrice),
+                            gas: web3.utils.toHex(21000)
+                        };
+                        console.log('📝 TX Params:', { from: txParams.from, to: txParams.to, value: txParams.value, gas: txParams.gas });
+
+                        // Ensure privateKey has 0x prefix
+                        const pkForSigning = adminPrivateKey.startsWith('0x') ? adminPrivateKey : '0x' + adminPrivateKey;
+                        console.log('🔐 Signing transaction...');
+                        const signed = await web3.eth.accounts.signTransaction(txParams, pkForSigning);
+                        if (!signed.rawTransaction) throw new Error('Failed to sign refund transaction');
+                        console.log('✅ Signed successfully');
+
+                        const dataObj: any = {
+                            transactionHash: `refund_${Date.now()}_${order.id}`,
+                            fromAddress: adminAddress,
+                            toAddress: buyerAddress,
+                            amount: String(amountStr),
+                            amountInFiat: Number(order.totalPrice) || 0,
+                            status: 'PENDING',
+                            description: `Refund for order ${order.id}`,
+                            orderId: order.id
+                        };
+                        if (cryptoMeta && cryptoMeta.id) dataObj.cryptoId = cryptoMeta.id;
+                        console.log('💾 Creating refund record...');
+                        const refundRecord = await prisma.cryptoTransaction.create({ data: dataObj });
+                        console.log('✅ Refund record created, ID:', refundRecord.id);
+
+                        console.log('📤 Sending signed transaction...');
+                        const sendReceipt = await web3.eth.sendSignedTransaction(signed.rawTransaction as string);
+                        console.log('✅ Transaction receipt:', sendReceipt.transactionHash);
+
+                        await prisma.cryptoTransaction.update({ where: { id: refundRecord.id }, data: { transactionHash: sendReceipt.transactionHash || '', status: 'SUCCESS' } });
+                        // Mark original transaction as REFUNDED
+                        if (origTx) {
+                            await prisma.cryptoTransaction.update({ where: { id: origTx.id }, data: { status: 'REFUNDED' } });
+                            console.log('📝 [REFUND] Original transaction marked as REFUNDED');
+                        }
+                        await prisma.order.update({ where: { id: orderId }, data: { paymentStatus: 'REFUNDED' } });
+                        console.log('✅ Refund complete! Order', orderId, 'refunded to', buyerAddress, 'TxHash:', sendReceipt.transactionHash);
+                    } catch (txErr) {
+                        console.error('❌ Error sending refund transaction for order', orderId, ':', txErr instanceof Error ? txErr.message : txErr);
+                        if (txErr instanceof Error) console.error('Stack:', txErr.stack);
+                        await prisma.order.update({ where: { id: orderId }, data: { paymentStatus: 'REFUND_FAILED' } });
+                    }
+                }
+            } else {
+                console.warn('⚠️ [REFUND] No original crypto transaction or buyer address found for order', orderId);
+            }
+        }
+    } catch (cryptoErr) {
+        console.error('❌ [REFUND] Unexpected error during crypto refund for order', orderId, ':', cryptoErr instanceof Error ? cryptoErr.message : cryptoErr);
+        if (cryptoErr instanceof Error && cryptoErr.message.includes('Cannot find module')) {
+            console.error('⚠️ Make sure web3 npm package is installed: npm install web3 --legacy-peer-deps');
+        }
+    }
+
+    // Restore product quantities and mark order cancelled
+    try {
+        // For each order detail, increment product/variant stock and decrement sold
+        for (const od of order.orderDetails) {
+            const qty = od.quantity || 0;
+            // update product
+            await prisma.product.update({ where: { id: od.productId }, data: { quantity: { increment: qty }, sold: { decrement: qty } } });
+            // update variant if exists
+            if (od.productVariantId) {
+                await prisma.productVariant.update({ where: { id: od.productVariantId }, data: { quantity: { increment: qty }, sold: { decrement: qty } } });
+            }
+        }
+    } catch (stockErr) {
+        console.error('Error restoring product quantities for cancelled order', orderId, stockErr);
+    }
+
+    // Mark order as cancelled
+    await prisma.order.update({ where: { id: orderId }, data: { statusOrder: 'CANCELLED' } });
     return true;
 };
 

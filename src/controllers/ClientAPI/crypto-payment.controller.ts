@@ -84,19 +84,19 @@ export const confirmCryptoPayment = async (req: Request, res: Response): Promise
                     // Find cryptocurrency by provided code (currency) or fallback to active
                     const cryptoRecord = (currency ? await prisma.cryptocurrency.findFirst({ where: { code: currency } }) : null) || await prisma.cryptocurrency.findFirst({ where: { isActive: true } }) || await prisma.cryptocurrency.findFirst();
                     if (cryptoRecord) {
-                        await prisma.cryptoTransaction.create({
-                            data: {
-                                transactionHash: transactionHash,
-                                fromAddress: '',
-                                toAddress: toAddress,
-                                amount: String(amount || ''),
-                                amountInFiat: Number(vndAmount) || 0,
-                                status: 'SUCCESS',
-                                description: `Payment for order ${newOrder.id}`,
-                                orderId: newOrder.id,
-                                cryptoId: cryptoRecord.id
-                            }
-                        });
+                            await prisma.cryptoTransaction.create({
+                                data: {
+                                    transactionHash: transactionHash,
+                                    fromAddress: req.body.fromAddress || '',
+                                    toAddress: toAddress,
+                                    amount: String(amount || ''),
+                                    amountInFiat: Number(vndAmount) || 0,
+                                    status: 'SUCCESS',
+                                    description: `Payment for order ${newOrder.id}`,
+                                    orderId: newOrder.id,
+                                    cryptoId: cryptoRecord.id
+                                }
+                            });
                     } else {
                         console.warn('No cryptocurrency record found; skipping cryptoTransaction creation');
                     }
@@ -266,7 +266,7 @@ export const confirmCryptoPayment = async (req: Request, res: Response): Promise
                         await prisma.cryptoTransaction.create({
                             data: {
                                 transactionHash: transactionHash,
-                                fromAddress: '',
+                                fromAddress: req.body.fromAddress || '',
                                 toAddress: toAddress,
                                 amount: String(amount || ''),
                                 amountInFiat: Number(vndAmount) || 0,

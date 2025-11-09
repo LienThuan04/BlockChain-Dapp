@@ -136,8 +136,17 @@
                                                     </td>
                                                     <td><small><%= tx.createdAt %></small></td>
                                                     <td>
-                                                        <span class="badge bg-<%= tx.status === 'COMPLETED' ? 'success' : 'warning' %>">
-                                                            <%= tx.status %>
+                                                        <% const statusMap = {
+                                                            'COMPLETED': { badge: 'success', text: 'Thành Công' },
+                                                            'SUCCESS': { badge: 'success', text: 'Thành Công' },
+                                                            'REFUNDED': { badge: 'info', text: 'Đã Hoàn Tiền' },
+                                                            'PENDING': { badge: 'warning', text: 'Đang Xử Lý' },
+                                                            'FAILED': { badge: 'danger', text: 'Thất Bại' }
+                                                        };
+                                                        const statusInfo = statusMap[tx.status] || { badge: 'secondary', text: tx.status };
+                                                        %>
+                                                        <span class="badge bg-<%= statusInfo.badge %>">
+                                                            <%= statusInfo.text %>
                                                         </span>
                                                     </td>
                                                     <td>
