@@ -1,5 +1,9 @@
 // const Express = require('express');
-import 'module-alias/register';
+// Load module-alias only in production builds (dev uses tsconfig-paths)
+if (process.env.NODE_ENV === 'production') {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  require('module-alias/register');
+}
 import express from 'express';
 import 'dotenv/config';
 import webroutes from 'routes/web';
