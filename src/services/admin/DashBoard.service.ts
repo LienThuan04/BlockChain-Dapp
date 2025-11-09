@@ -7,7 +7,10 @@ const DashBoardData = async () => {
     const factory = await prisma.factory.count();
     const target = await prisma.target.count();
     const reviews = await prisma.review.count();
-    return { users, products, orders, factory, target, reviews };
+    const cryptocurrencies = await (prisma as any).cryptocurrency.count();
+    const wallets = await (prisma as any).cryptoWallet.count();
+    const cryptoTransactions = await (prisma as any).cryptoTransaction.count();
+    return { users, products, orders, factory, target, reviews, cryptocurrencies, wallets, cryptoTransactions };
 };
 
 export { DashBoardData };

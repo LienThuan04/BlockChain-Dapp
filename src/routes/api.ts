@@ -2,6 +2,8 @@ import { GetRevenueWithFilter, GetBestSellProducts, GetTopContributors } from "c
 import { createUserApi, DelUserByIdApi, getAllUserApi, GetUserByIdApi, PutUpdateUserByIDApi } from "controllers/AdminAPI/user.controller";
 import { PostAddProductToCartAPI } from "controllers/client/api.controller";
 import { fetchAccountAPI, LoginAPI } from "controllers/ClientAPI/Client.controller";
+import { getAdminWallet, confirmCryptoPayment } from "controllers/ClientAPI/crypto-payment.controller";
+import { getActiveCryptocurrencyPrice } from "controllers/admin/cryptocurrency-management.controller";
 import { create } from "domain";
 import { Express, Router } from 'express';
 
@@ -31,6 +33,11 @@ const apiRouters = (app: Express) => {
     router.post('/users', createUserApi);
     router.put('/users/:id', PutUpdateUserByIDApi);
     router.delete('/users/:id', DelUserByIdApi);
+
+    // Cryptocurrency APIs
+    router.get('/cryptocurrency/active-price', getActiveCryptocurrencyPrice);
+    router.get('/crypto/admin-wallet', getAdminWallet);
+    router.post('/crypto/confirm-payment', confirmCryptoPayment);
 
     // router.
 

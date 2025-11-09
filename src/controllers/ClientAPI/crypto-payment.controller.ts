@@ -9,11 +9,12 @@ const prisma = new PrismaClient();
 // Trả về địa chỉ ví admin từ biến môi trường - công khai không cần đăng nhập
 export const getAdminWallet = async (req: Request, res: Response): Promise<void> => {
     try {
-        const adminWallet = process.env.ADMIN_WALLET_ADDRESS;
+        // Prefer active wallet from DB so frontend always gets the currently selected address
+        const activeWalletRecord = await prisma.cryptoWallet.findFirst({ where: { isActive: true } });
+        const adminWallet = activeWalletRecord?.walletAddress || process.env.ADMIN_WALLET_ADDRESS;
+
         if (!adminWallet) {
-            res.status(500).json({ 
-                error: 'Chưa cấu hình địa chỉ ví admin' 
-            });
+            res.status(500).json({ error: 'Chưa cấu hình địa chỉ ví admin' });
             return;
         }
 
@@ -52,6 +53,9 @@ export const confirmCryptoPayment = async (req: Request, res: Response): Promise
             return;
         }
 
+        console.log('Crypto payment request body:', req.body);
+        console.log('CartItems received:', cartItems, 'Type:', Array.isArray(cartItems), 'Length:', cartItems?.length);
+
         // If from checkout (cartItems provided), handle multiple items
         if (cartItems && Array.isArray(cartItems) && cartItems.length > 0) {
             const order = await prisma.$transaction(async (prisma) => {
@@ -59,7 +63,8 @@ export const confirmCryptoPayment = async (req: Request, res: Response): Promise
                 const newOrder = await prisma.order.create({
                     data: {
                         userId: userId,
-                        totalPrice: vndAmount || 0,
+                        // ensure totalPrice is an integer (Prisma expects Int)
+                        totalPrice: parseInt(vndAmount) || 0,
                         receiverName: receiverName || '',
                         receiverPhone: receiverPhone || '',
                         receiverAddress: receiverAddress || '',
@@ -72,56 +77,121 @@ export const confirmCryptoPayment = async (req: Request, res: Response): Promise
                     }
                 });
 
+                // Record crypto transaction tied to the (active) admin wallet and this order
+                try {
+                    const activeWalletRecord = await prisma.cryptoWallet.findFirst({ where: { isActive: true } });
+                    const toAddress = activeWalletRecord?.walletAddress || process.env.ADMIN_WALLET_ADDRESS || '';
+                    // Find cryptocurrency by provided code (currency) or fallback to active
+                    const cryptoRecord = (currency ? await prisma.cryptocurrency.findFirst({ where: { code: currency } }) : null) || await prisma.cryptocurrency.findFirst({ where: { isActive: true } }) || await prisma.cryptocurrency.findFirst();
+                    if (cryptoRecord) {
+                        await prisma.cryptoTransaction.create({
+                            data: {
+                                transactionHash: transactionHash,
+                                fromAddress: '',
+                                toAddress: toAddress,
+                                amount: String(amount || ''),
+                                amountInFiat: Number(vndAmount) || 0,
+                                status: 'SUCCESS',
+                                description: `Payment for order ${newOrder.id}`,
+                                orderId: newOrder.id,
+                                cryptoId: cryptoRecord.id
+                            }
+                        });
+                    } else {
+                        console.warn('No cryptocurrency record found; skipping cryptoTransaction creation');
+                    }
+                } catch (txErr) {
+                    console.warn('Failed to record cryptoTransaction:', txErr);
+                }
+
                 // Tạo chi tiết đơn hàng cho từng item
                 for (const item of cartItems) {
+                    const parsedId = parseInt(item.id, 10);
                     const cartItem = await prisma.cartdetail.findUnique({
-                        where: { id: parseInt(item.id) }
+                        where: { id: parsedId }
                     });
 
-                    if (cartItem) {
-                        const productVariant = await prisma.productVariant.findUnique({
-                            where: { id: parseInt(item.productVariantId) }
-                        });
-
-                        if (productVariant) {
-                            const product = await prisma.product.findUnique({
-                                where: { id: productVariant.productId }
-                            });
-
-                            if (product) {
-                                const finalPrice = product.price + (productVariant.priceMore || 0);
-
-                                // Tạo chi tiết đơn hàng
-                                await prisma.orderDetail.create({
-                                    data: {
-                                        orderId: newOrder.id,
-                                        productId: product.id,
-                                        productVariantId: productVariant.id,
-                                        quantity: cartItem.quantityProduct || 1,
-                                        price: finalPrice
-                                    }
-                                });
-
-                                // Cập nhật số lượng sản phẩm
-                                await prisma.product.update({
-                                    where: { id: product.id },
-                                    data: {
-                                        quantity: {
-                                            decrement: cartItem.quantityProduct || 1
-                                        },
-                                        sold: {
-                                            increment: cartItem.quantityProduct || 1
-                                        }
-                                    }
-                                });
-
-                                // Xóa item khỏi giỏ hàng
-                                await prisma.cartdetail.delete({
-                                    where: { id: cartItem.id }
-                                });
-                            }
-                        }
+                    if (!cartItem) {
+                        console.warn(`Cart detail not found for id=${item.id}`);
+                        continue;
                     }
+
+                    // Determine variant id: prefer sent value, fallback to cart record
+                    let variantId = parseInt(item.productVariantId, 10);
+                    if (isNaN(variantId) || variantId <= 0) {
+                        variantId = cartItem.productVariantId;
+                    }
+
+                    // If still falsy (shouldn't happen because cartItem.productVariantId is non-null in schema), try to get a default variant for the product
+                    if (!variantId) {
+                        const defaultVariant = await prisma.productVariant.findFirst({ where: { productId: cartItem.productId } });
+                        if (defaultVariant) variantId = defaultVariant.id;
+                    }
+
+                    let productVariant = null;
+                    if (variantId) {
+                        productVariant = await prisma.productVariant.findUnique({ where: { id: variantId } });
+                    }
+
+                    // Determine product id
+                    const productId = productVariant ? productVariant.productId : cartItem.productId;
+                    const product = await prisma.product.findUnique({ where: { id: productId } });
+
+                    if (!product) {
+                        console.warn(`Product not found for productId=${productId}`);
+                        // still delete cart item to avoid blocking user next time
+                        await prisma.cartdetail.delete({ where: { id: cartItem.id } });
+                        continue;
+                    }
+
+                    const finalPrice = product.price + (productVariant && productVariant.priceMore ? productVariant.priceMore : 0);
+
+                    // Create order detail
+                    await prisma.orderDetail.create({
+                        data: {
+                            orderId: newOrder.id,
+                            productId: product.id,
+                            productVariantId: productVariant ? productVariant.id : cartItem.productVariantId,
+                            quantity: cartItem.quantityProduct || 1,
+                            price: finalPrice
+                        }
+                    });
+
+                    // Update variant stock if variant exists
+                    if (productVariant) {
+                        await prisma.productVariant.update({
+                            where: { id: productVariant.id },
+                            data: {
+                                quantity: { decrement: cartItem.quantityProduct || 1 },
+                                sold: { increment: cartItem.quantityProduct || 1 }
+                            }
+                        });
+                    }
+
+                    // Update product stock as well (keeps aggregate in sync)
+                    await prisma.product.update({
+                        where: { id: product.id },
+                        data: {
+                            quantity: { decrement: cartItem.quantityProduct || 1 },
+                            sold: { increment: cartItem.quantityProduct || 1 }
+                        }
+                    });
+
+                    // Update cart total quantity
+                    try {
+                        await prisma.cart.update({
+                            where: { id: cartItem.cartId },
+                            data: {
+                                quantity: { decrement: cartItem.quantityProduct || 1 }
+                            }
+                        });
+                    } catch (e) {
+                        // If cart update fails, log but continue - we still want to remove cartdetail
+                        console.warn(`Failed to update cart quantity for cartId=${cartItem.cartId}:`, e);
+                    }
+
+                    // Delete item from cart
+                    await prisma.cartdetail.delete({ where: { id: cartItem.id } });
                 }
 
                 return newOrder;
@@ -186,6 +256,32 @@ export const confirmCryptoPayment = async (req: Request, res: Response): Promise
                         paymentRef: transactionHash,
                     }
                 });
+
+                // Record crypto transaction for this single-product order
+                try {
+                    const activeWalletRecord = await prisma.cryptoWallet.findFirst({ where: { isActive: true } });
+                    const toAddress = activeWalletRecord?.walletAddress || process.env.ADMIN_WALLET_ADDRESS || '';
+                    const cryptoRecord = (currency ? await prisma.cryptocurrency.findFirst({ where: { code: currency } }) : null) || await prisma.cryptocurrency.findFirst({ where: { isActive: true } }) || await prisma.cryptocurrency.findFirst();
+                    if (cryptoRecord) {
+                        await prisma.cryptoTransaction.create({
+                            data: {
+                                transactionHash: transactionHash,
+                                fromAddress: '',
+                                toAddress: toAddress,
+                                amount: String(amount || ''),
+                                amountInFiat: Number(vndAmount) || 0,
+                                status: 'SUCCESS',
+                                description: `Payment for order ${newOrder.id}`,
+                                orderId: newOrder.id,
+                                cryptoId: cryptoRecord.id
+                            }
+                        });
+                    } else {
+                        console.warn('No cryptocurrency record found; skipping cryptoTransaction creation for product order');
+                    }
+                } catch (txErr) {
+                    console.warn('Failed to record cryptoTransaction for product order:', txErr);
+                }
 
                 // Tạo chi tiết đơn hàng
                 await prisma.orderDetail.create({

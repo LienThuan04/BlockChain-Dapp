@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="Manage Currency - Admin" />
+    <meta name="author" content="LianHarman" />
+    <title>Currency Management - Admin</title>
+    <link rel="icon" type="image/svg+xml" href="/im/Logo-Admin.svg">
+    <link href="/admin/css/styles.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body class="sb-nav-fixed">
+    <!-- header -->
+    <%- include('../layout/header.ejs') -%>
+
+    <!-- main content -->
+    <div id="layoutSidenav">
+        <!-- sidenav -->
+        <%- include('../layout/sidenav.ejs') -%>
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid px-4">
+                    <div class="d-flex justify-content-between align-items-center mt-4 mb-1">
+                        <div class="d-flex flex-column w-100">
+                            <h1 class="fw-bold text-primary mb-1"><i class="fas fa-money-bill-alt"></i> Currency Management</h1>
+                            <ol class="breadcrumb bg-light rounded shadow-sm px-3 py-2 mt-2" style="cursor: pointer;">
+                                <li class="breadcrumb-item"><a href="/admin" class="text-decoration-none">Dashboard</a></li>
+                                <li class="breadcrumb-item active">Currency Management</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <% if (error) { %>
+                        <div id="error-alert" class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fa fa-exclamation-circle me-2"></i> <%= error %>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <% } %>
+
+                    <!-- Active Currency Card -->
+                    <% if (activeCurrency) { %>
+                        <div class="card mb-4 border-success">
+                            <div class="card-header bg-success text-white">
+                                <i class="fas fa-check-circle me-2"></i>Active Currency
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <h6 class="text-muted mb-1">Currency Code</h6>
+                                            <h4 class="text-primary"><%= activeCurrency.symbol %> <%= activeCurrency.currencyCode %></h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <h6 class="text-muted mb-1">Currency Name</h6>
+                                            <p class="mb-0"><%= activeCurrency.currencyName %></p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <h6 class="text-muted mb-1">Exchange Rate</h6>
+                                            <p class="mb-0">1 SGB = <strong><%= activeCurrency.exchangeRate.toLocaleString('en-US') %></strong></p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <h6 class="text-muted mb-1">Status</h6>
+                                            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Active</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <% } else { %>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>No currency is currently activated
+                        </div>
+                    <% } %>
+
+                    <!-- Add New Currency -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-plus-circle me-2"></i>Add New Currency
+                        </div>
+                        <div class="card-body">
+                            <form id="addCurrencyForm">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="currencyCode" class="form-label">Currency Code <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="currencyCode" name="currencyCode" placeholder="VND, USD, EUR..." required maxlength="10">
+                                            <small class="text-muted">Example: VND, USD, EUR</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="currencyName" class="form-label">Currency Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="currencyName" name="currencyName" placeholder="Vietnamese Dong..." required>
+                                            <small class="text-muted">Example: Vietnamese Dong, US Dollar</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="symbol" class="form-label">Symbol <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="symbol" name="symbol" placeholder="₫, $, €..." required maxlength="10">
+                                            <small class="text-muted">Example: ₫, $, €</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="exchangeRate" class="form-label">Exchange Rate (1 SGB = ?) <span class="text-danger">*</span></label>
+                                            <input type="number" class="form-control" id="exchangeRate" name="exchangeRate" placeholder="300000" step="0.01" required>
+                                            <small class="text-muted">How much is 1 SGB in this currency?</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Add Currency
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Currencies List -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-list me-2"></i>Currency List
+                        </div>
+                        <div class="card-body">
+                            <% if (currencies && currencies.length > 0) { %>
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Symbol</th>
+                                                <th>Code</th>
+                                                <th>Name</th>
+                                                <th>Exchange Rate (1 SGB = ?)</th>
+                                                <th>Status</th>
+                                                <th>Created Date</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% currencies.forEach(currency => { %>
+                                                <tr class="currency-row-<%= currency.id %>">
+                                                    <td><h5 class="mb-0"><%= currency.symbol %></h5></td>
+                                                    <td><strong><%= currency.currencyCode %></strong></td>
+                                                    <td><%= currency.currencyName %></td>
+                                                    <td>
+                                                        <span class="exchange-rate-<%= currency.id %>">
+                                                            <%= currency.exchangeRate.toLocaleString('en-US') %>
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <% if (currency.isActive) { %>
+                                                            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Active</span>
+                                                        <% } else { %>
+                                                            <span class="badge bg-secondary"><i class="fas fa-times-circle me-1"></i>Inactive</span>
+                                                        <% } %>
+                                                    </td>
+                                                    <td><small><%= new Date(currency.createdAt).toLocaleString('en-US') %></small></td>
+                                                    <td>
+                                                        <div class="btn-group btn-group-sm" role="group">
+                                                            <% if (!currency.isActive) { %>
+                                                                <button type="button" class="btn btn-primary activate-currency" data-currency-id="<%= currency.id %>" title="Activate">
+                                                                    <i class="fas fa-power-off"></i> Activate
+                                                                </button>
+                                                                <button type="button" class="btn btn-danger delete-currency" data-currency-id="<%= currency.id %>" title="Delete">
+                                                                    <i class="fas fa-trash"></i> Delete
+                                                                </button>
+                                                            <% } else { %>
+                                                                <span class="text-muted">-</span>
+                                                            <% } %>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            <% }); %>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <% } else { %>
+                                <div class="text-center p-5">
+                                    <i class="fas fa-inbox" style="font-size: 48px; color: #ccc;"></i>
+                                    <p class="text-muted mt-3">No currencies found</p>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <%- include('../layout/footer.ejs') -%>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/admin/js/scripts.js"></script>
+    <script>
+        // Add new currency
+        document.getElementById('addCurrencyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const currencyCode = document.getElementById('currencyCode').value;
+            const currencyName = document.getElementById('currencyName').value;
+            const symbol = document.getElementById('symbol').value;
+            const exchangeRate = document.getElementById('exchangeRate').value;
+
+            try {
+                const response = await fetch('/admin/currency/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ currencyCode, currencyName, symbol, exchangeRate })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('✅ ' + data.message);
+                    location.reload();
+                } else {
+                    alert('❌ ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ An error occurred');
+            }
+        });
+
+        // Activate currency
+        document.querySelectorAll('.activate-currency').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const currencyId = this.dataset.currencyId;
+
+                if (!confirm('Are you sure you want to activate this currency?')) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/admin/currency/activate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ currencyId })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        alert('✅ ' + data.message);
+                        location.reload();
+                    } else {
+                        alert('❌ ' + data.error);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('❌ An error occurred');
+                }
+            });
+        });
+
+        // Delete currency
+        document.querySelectorAll('.delete-currency').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const currencyId = this.dataset.currencyId;
+
+                if (!confirm('Are you sure you want to delete this currency? This action cannot be undone!')) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/admin/currency/delete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ currencyId })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        alert('✅ ' + data.message);
+                        location.reload();
+                    } else {
+                        alert('❌ ' + data.error);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('❌ An error occurred');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

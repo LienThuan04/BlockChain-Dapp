@@ -163,8 +163,9 @@
                                                                         </td>
                                                                         <td>
                                                                             <p class="mb-0 mt-4 text-dark fw-bold">
-                                                                                <%= item.product.price.toLocaleString('vi-VN')
-                                                                                    %> VND
+                                                                                <% const variantPriceMore = (item.productVariant && item.productVariant.priceMore) ? item.productVariant.priceMore : 0; %>
+                                                                                <% const unitPrice = (item.product && item.product.price ? item.product.price : 0) + variantPriceMore; %>
+                                                                                <%= unitPrice.toLocaleString('vi-VN') %> VND
                                                                             </p>
                                                                         </td>
                                                                         <td>
@@ -175,9 +176,7 @@
                                                                         <td>
                                                                             <p class="mb-0 mt-4 text-danger fw-bold"
                                                                                 data-OutPutCartDetail-id="<%= item.id %>">
-                                                                                <%= (item.price *
-                                                                                    item.quantity).toLocaleString('vi-VN')
-                                                                                    %> VND
+                                                                                <%= (unitPrice * item.quantity).toLocaleString('vi-VN') %> VND
                                                                             </p>
                                                                         </td>
                                                                     </tr>

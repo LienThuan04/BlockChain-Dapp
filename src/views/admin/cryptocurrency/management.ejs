@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="Manage Cryptocurrency - Admin" />
+    <meta name="author" content="LianHarman" />
+    <title><%= title %></title>
+    <link rel="icon" type="image/svg+xml" href="/im/Logo-Admin.svg">
+    <link href="/admin/css/styles.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .crypto-card {
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .crypto-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+        .active-crypto {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .crypto-symbol {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .status-active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .chain-info {
+            background: #f1f3f5;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            font-size: 0.9rem;
+        }
+        .decimals-input {
+            width: 100px;
+        }
+    </style>
+</head>
+
+<body class="sb-nav-fixed">
+    <!-- header -->
+    <%- include('../layout/header.ejs') -%>
+
+    <!-- main content -->
+    <div id="layoutSidenav">
+        <!-- sidenav -->
+        <%- include('../layout/sidenav.ejs') -%>
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid px-4">
+                    <div class="d-flex justify-content-between align-items-center mt-4 mb-1">
+                        <div class="d-flex flex-column w-100">
+                            <h1 class="fw-bold text-primary mb-1"><i class="fas fa-coins"></i> Cryptocurrency Management</h1>
+                            <ol class="breadcrumb bg-light rounded shadow-sm px-3 py-2 mt-2" style="cursor: pointer;">
+                                <li class="breadcrumb-item"><a href="/admin" class="text-decoration-none">Dashboard</a></li>
+                                <li class="breadcrumb-item active">Cryptocurrency Management</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <!-- Active Cryptocurrency Display -->
+                    <% const activeCrypto = cryptocurrencies.find(c => c.isActive); %>
+                    <% if (activeCrypto) { %>
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="crypto-card active-crypto p-4">
+                                <div class="row align-items-center">
+                                    <div class="col-md-3 text-center">
+                                        <div class="crypto-symbol"><%= activeCrypto.symbol %></div>
+                                    </div>
+                                    <div class="col-md-9">
+                                        <h3 class="mb-2"><%= activeCrypto.name %> (<%= activeCrypto.code %>)</h3>
+                                        <p class="mb-2"><strong>Blockchain:</strong> <%= activeCrypto.chainName %></p>
+                                        <p class="mb-2"><strong>Chain ID:</strong> <%= activeCrypto.chainId %></p>
+                                        <p class="mb-0"><strong>Số Chữ Số (Decimals):</strong> <%= activeCrypto.decimals %></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <% } %>
+
+                    <!-- Add New Cryptocurrency Form -->
+                    <div class="form-section">
+                        <h4 class="mb-4"><i class="fas fa-plus-circle"></i> Add New Cryptocurrency</h4>
+                        <form id="addCryptoForm" method="POST" action="/admin/cryptocurrency/add">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="cryptoName" class="form-label">Cryptocurrency Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="cryptoName" name="name" placeholder="e.g., Bitcoin, Ethereum" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="cryptoCode" class="form-label">Cryptocurrency Code <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="cryptoCode" name="code" placeholder="e.g., BTC, ETH, SGB" required>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="cryptoSymbol" class="form-label">Symbol <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="cryptoSymbol" name="symbol" placeholder="e.g., ฿, Ξ, ⚡" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="cryptoPrice" class="form-label">Price (VND)</label>
+                                    <input type="number" class="form-control" id="cryptoPrice" name="priceVND" placeholder="e.g., 8750" step="1" min="0">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="cryptoDecimals" class="form-label">Decimals</label>
+                                    <input type="number" class="form-control decimals-input" id="cryptoDecimals" name="decimals" value="18" min="0" max="36">
+                                </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="cryptoChainName" class="form-label">Blockchain Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="cryptoChainName" name="chainName" placeholder="e.g., Flare Coston Testnet" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="cryptoChainId" class="form-label">Chain ID <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="cryptoChainId" name="chainId" placeholder="e.g., 0x10" required>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <label for="cryptoRpcUrl" class="form-label">RPC URL <span class="text-danger">*</span></label>
+                                    <input type="url" class="form-control" id="cryptoRpcUrl" name="rpcUrl" placeholder="e.g., https://coston-api.flare.network/ext/bc/C/rpc" required>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <label for="contractAddress" class="form-label">Contract Address (if token on another blockchain)</label>
+                                    <input type="text" class="form-control" id="contractAddress" name="contractAddress" placeholder="0x...">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <label for="cryptoDescription" class="form-label">Description</label>
+                                    <textarea class="form-control" id="cryptoDescription" name="description" rows="3" placeholder="Enter additional description about this cryptocurrency..."></textarea>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-plus"></i> Add Cryptocurrency
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Cryptocurrencies List -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h4 class="mb-3"><i class="fas fa-list"></i> Cryptocurrency List</h4>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Symbol</th>
+                                            <th>Name</th>
+                                            <th>Code</th>
+                                            <th>Price (USD)</th>
+                                            <th>Blockchain</th>
+                                            <th>Chain ID</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% if (cryptocurrencies.length > 0) { %>
+                                            <% cryptocurrencies.forEach(crypto => { %>
+                                            <tr>
+                                                <td>
+                                                    <span style="font-size: 1.5rem;"><%= crypto.symbol %></span>
+                                                </td>
+                                                <td><strong><%= crypto.name %></strong></td>
+                                                <td><code><%= crypto.code %></code></td>
+                                                <td><strong class="text-success">₫<%= crypto.priceVND.toLocaleString('en-US') %></strong></td>
+                                                <td><%= crypto.chainName %></td>
+                                                <td><code><%= crypto.chainId %></code></td>
+                                                <td>
+                                                    <span class="status-badge <%= crypto.isActive ? 'status-active' : 'status-inactive' %>">
+                                                        <%= crypto.isActive ? '✓ Active' : 'Inactive' %>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="action-buttons">
+                                                        <% if (!crypto.isActive) { %>
+                                                        <button type="button" class="btn btn-sm btn-success" onclick="activateCrypto(<%= crypto.id %>)">
+                                                            <i class="fas fa-check"></i> Activate
+                                                        </button>
+                                                        <a href="/admin/cryptocurrency/edit/<%= crypto.id %>" class="btn btn-sm btn-warning">
+                                                            <i class="fas fa-edit"></i> Edit
+                                                        </a>
+                                                        <button type="button" class="btn btn-sm btn-danger" onclick="deleteCrypto(<%= crypto.id %>)">
+                                                            <i class="fas fa-trash"></i> Delete
+                                                        </button>
+                                                        <% } else { %>
+                                                        <a href="/admin/cryptocurrency/edit/<%= crypto.id %>" class="btn btn-sm btn-primary">
+                                                            <i class="fas fa-edit"></i> Edit Price
+                                                        </a>
+                                                        <% } %>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <% }); %>
+                                        <% } else { %>
+                                        <tr>
+                                            <td colspan="7" class="text-center text-muted py-4">
+                                                <i class="fas fa-inbox"></i> No cryptocurrencies found
+                                            </td>
+                                        </tr>
+                                        <% } %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <%- include('../layout/footer.ejs') -%>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery.toast@1.0.0/jquery.toast.min.js"></script>
+
+    <script>
+        // Handle form submission for adding crypto
+        document.getElementById('addCryptoForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = {
+                name: document.getElementById('cryptoName').value,
+                code: document.getElementById('cryptoCode').value,
+                symbol: document.getElementById('cryptoSymbol').value,
+                chainName: document.getElementById('cryptoChainName').value,
+                rpcUrl: document.getElementById('cryptoRpcUrl').value,
+                chainId: document.getElementById('cryptoChainId').value,
+                contractAddress: document.getElementById('contractAddress').value,
+                decimals: document.getElementById('cryptoDecimals').value,
+                description: document.getElementById('cryptoDescription').value
+            };
+
+            try {
+                const response = await fetch('/admin/cryptocurrency/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    $.toast({
+                        heading: 'Success',
+                        text: result.message,
+                        showHideTransition: 'fade',
+                        icon: 'success',
+                        position: 'top-right'
+                    });
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    $.toast({
+                        heading: 'Error',
+                        text: result.error,
+                        showHideTransition: 'fade',
+                        icon: 'error',
+                        position: 'top-right'
+                    });
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                $.toast({
+                    heading: 'Error',
+                    text: 'An error occurred',
+                    showHideTransition: 'fade',
+                    icon: 'error',
+                    position: 'top-right'
+                });
+            }
+        });
+
+        // Activate cryptocurrency
+        async function activateCrypto(cryptoId) {
+            if (!confirm('Are you sure you want to activate this cryptocurrency?')) return;
+
+            try {
+                const response = await fetch('/admin/cryptocurrency/activate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cryptoId })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    $.toast({
+                        heading: 'Success',
+                        text: result.message,
+                        showHideTransition: 'fade',
+                        icon: 'success',
+                        position: 'top-right'
+                    });
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    $.toast({
+                        heading: 'Error',
+                        text: result.error,
+                        showHideTransition: 'fade',
+                        icon: 'error',
+                        position: 'top-right'
+                    });
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Delete cryptocurrency
+        async function deleteCrypto(cryptoId) {
+            if (!confirm('Are you sure you want to delete this cryptocurrency?\n\nThis action cannot be undone!')) return;
+
+            try {
+                const response = await fetch('/admin/cryptocurrency/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cryptoId })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    $.toast({
+                        heading: 'Success',
+                        text: result.message,
+                        showHideTransition: 'fade',
+                        icon: 'success',
+                        position: 'top-right'
+                    });
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    $.toast({
+                        heading: 'Error',
+                        text: result.error,
+                        showHideTransition: 'fade',
+                        icon: 'error',
+                        position: 'top-right'
+                    });
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Update VND display when price changes
+        document.getElementById('cryptoPrice').addEventListener('input', function() {
+            const usdPrice = parseFloat(this.value) || 0;
+            const vndPrice = (usdPrice * 25000).toLocaleString('en-US');
+            document.getElementById('vndDisplay').textContent = vndPrice;
+        });
+    </script>
+</body>
+</html>

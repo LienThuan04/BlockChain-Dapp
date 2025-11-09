@@ -18,25 +18,23 @@ const PostClientToUpdateAcc = async (userId: number, data: { fullName: string, a
     return updatedUser;
 };
 
-const AddProductToCart = async (user: UserRole, quantity: number, productId: number, productVariantId: number) => {
+const AddProductToCart = async (user: UserRole, quantity: number, productId: number, productVariantId?: number) => {
+    console.log('AddProductToCart called with', { userId: user.id, quantity, productId, productVariantId });
     const cart = await prisma.cart.findUnique({
         where: { userId: user.id }
     });
     const product = await prisma.product.findUnique({
         where: { id: productId }
     });
-    const productVariant = await prisma.productVariant.findUnique({
-        where: { id: productVariantId }
-    });
+    const productVariant = (typeof productVariantId === 'number' && !isNaN(productVariantId)) ? await prisma.productVariant.findUnique({ where: { id: productVariantId } }) : null;
     if (cart) {
         // Tìm cartDetail theo productId, productVariantId và cartId
-        const cartDetail = await prisma.cartdetail.findFirst({
-            where: {
-                productId: productId,
-                productVariantId: productVariantId,
-                cartId: cart.id
-            }
-        });
+        const whereClause: any = { productId: productId, cartId: cart.id };
+        if (typeof productVariantId === 'number' && !isNaN(productVariantId)) whereClause.productVariantId = productVariantId;
+
+    console.log('Looking for existing cartDetail with where:', whereClause);
+    const cartDetail = await prisma.cartdetail.findFirst({ where: whereClause });
+    console.log('Found cartDetail:', cartDetail);
         const price = (product?.price || 0) + (productVariant?.priceMore || 0);
         if (cartDetail) {
             // Nếu đã có sản phẩm/variant này trong giỏ, cộng số lượng và cập nhật giá nếu cần
@@ -69,12 +67,20 @@ const AddProductToCart = async (user: UserRole, quantity: number, productId: num
                     }
                 }
             });
+            // Determine productVariantId to store: prefer provided, fallback to default variant for product
+            let pvToUse = productVariantId;
+            if (!(typeof pvToUse === 'number' && !isNaN(pvToUse))) {
+                const defaultVariant = await prisma.productVariant.findFirst({ where: { productId } });
+                if (defaultVariant) pvToUse = defaultVariant.id;
+                else throw new Error('No product variant available for this product');
+            }
+
             const newCartDetail = await prisma.cartdetail.create({
                 data: {
                     quantityProduct: quantity,
                     price: price,
                     productId: productId,
-                    productVariantId: productVariantId,
+                    productVariantId: pvToUse,
                     cartId: cart.id
                 }
             });
@@ -86,6 +92,14 @@ const AddProductToCart = async (user: UserRole, quantity: number, productId: num
             throw new Error("Product not found");
         }
         const price = (product?.price || 0) + (productVariant?.priceMore || 0);
+        // Determine productVariantId to store for new cart: prefer provided, fallback to default variant
+        let pvToUse = productVariantId;
+        if (!(typeof pvToUse === 'number' && !isNaN(pvToUse))) {
+            const defaultVariant = await prisma.productVariant.findFirst({ where: { productId } });
+            if (defaultVariant) pvToUse = defaultVariant.id;
+            else throw new Error('No product variant available for this product');
+        }
+
         const NewCart = await prisma.cart.create({
             data: {
                 userId: user.id,
@@ -96,7 +110,7 @@ const AddProductToCart = async (user: UserRole, quantity: number, productId: num
                             price: price,
                             quantityProduct: quantity,
                             productId: productId,
-                            productVariantId: productVariantId
+                            productVariantId: pvToUse
                         }
                     ]
                 }

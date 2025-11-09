@@ -6,8 +6,10 @@ const prisma = new PrismaClient();
 // Get admin crypto wallet info
 export const getCryptoWalletPage = async (req: Request, res: Response): Promise<void> => {
     try {
-        const adminWallet = process.env.ADMIN_WALLET_ADDRESS;
-        
+        // Prefer active wallet from DB so switching wallets immediately reflects in the UI
+        const activeWalletRecord = await prisma.cryptoWallet.findFirst({ where: { isActive: true } });
+        const adminWallet = activeWalletRecord?.walletAddress || process.env.ADMIN_WALLET_ADDRESS;
+
         if (!adminWallet) {
             res.status(400).render('admin/crypto-wallet/index.ejs', {
                 error: 'Admin wallet chưa được cấu hình',
@@ -23,53 +25,56 @@ export const getCryptoWalletPage = async (req: Request, res: Response): Promise<
             return;
         }
 
-        // Get crypto payment transactions from database
-        const transactions = await prisma.order.findMany({
+        // Get active cryptocurrency to get current exchange rate
+        const activeCrypto = await prisma.cryptocurrency.findFirst({ where: { isActive: true } });
+        const exchangeRate = activeCrypto?.priceVND || 8750; // Default: 1 SGB = 8,750 VND
+        console.log('Using exchange rate:', exchangeRate, 'VND per SGB');
+
+        // Query CryptoTransaction records that were sent TO this admin wallet address
+        // This ties transaction history to the selected wallet (toAddress)
+        const txs = await prisma.cryptoTransaction.findMany({
             where: {
-                paymentMethod: 'CRYPTO',
-                paymentStatus: 'PAID'
+                toAddress: adminWallet
             },
             include: {
-                User: {
-                    select: {
-                        email: true,
-                        fullName: true
+                order: {
+                    include: {
+                        User: true
                     }
-                }
+                },
+                cryptocurrency: true
             },
-            orderBy: {
-                createdAt: 'desc'
-            },
+            orderBy: { createdAt: 'desc' },
             take: 50
         });
 
-        // Format transactions for display
-        const formattedTransactions = transactions.map((tx: any) => ({
-            orderId: tx.id,
-            userEmail: tx.User?.email || 'N/A',
-            userName: tx.User?.fullName || 'N/A',
-            amount: (tx.totalPrice / 300000).toFixed(4), // Convert VND to SGB
-            vndAmount: tx.totalPrice,
-            transactionHash: tx.paymentRef,
-            status: tx.statusOrder,
-            createdAt: new Date(tx.createdAt).toLocaleString('vi-VN')
+        // Format transactions for display. Prefer amountInFiat if recorded, otherwise compute from amount
+        const formattedTransactions = txs.map((tx: any) => ({
+            orderId: tx.orderId,
+            userEmail: tx.order?.User?.email || 'N/A',
+            userName: tx.order?.User?.fullName || 'N/A',
+            amount: tx.amount, // crypto amount (string)
+            vndAmount: tx.amountInFiat ?? (Number(tx.amount || 0) * exchangeRate),
+            transactionHash: tx.transactionHash,
+            status: tx.status,
+            createdAt: new Date(tx.createdAt).toLocaleString('vi-VN'),
+            currency: tx.cryptocurrency?.code || activeCrypto?.code || 'SGB'
         }));
 
-        // Calculate total received
-        const totalReceived = transactions.reduce((sum, tx) => sum + tx.totalPrice, 0);
-        const totalReceivedSGB = (totalReceived / 300000).toFixed(4);
-        
+        // Calculate total received for this wallet
+        const totalReceived = txs.reduce((sum: number, tx: any) => sum + (tx.amountInFiat ?? Number(tx.amount || 0) * exchangeRate), 0);
+        const totalReceivedSGB = (totalReceived / exchangeRate).toFixed(4);
+
         // For demo purposes, show balance from latest transactions or 0
-        // In real implementation, you would fetch from blockchain
         const balanceInSGB = totalReceivedSGB;
 
         res.render('admin/crypto-wallet/index.ejs', {
             walletAddress: adminWallet,
             balance: '0',
             balanceInSGB: balanceInSGB,
-            nativeCurrency: 'SGB',
+            nativeCurrency: activeCrypto?.code || 'SGB',
             transactions: formattedTransactions,
-            totalTransactions: transactions.length,
+            totalTransactions: txs.length,
             totalReceived: totalReceived,
             totalReceivedSGB: totalReceivedSGB,
             error: null
@@ -93,37 +98,37 @@ export const getCryptoWalletPage = async (req: Request, res: Response): Promise<
 // Export wallet data as CSV
 export const exportCryptoTransactions = async (req: Request, res: Response): Promise<void> => {
     try {
-        const transactions = await prisma.order.findMany({
-            where: {
-                paymentMethod: 'CRYPTO',
-                paymentStatus: 'PAID'
-            },
+        // Prefer active wallet from DB (if any)
+        const activeWalletRecord = await prisma.cryptoWallet.findFirst({ where: { isActive: true } });
+        const adminWallet = activeWalletRecord?.walletAddress || process.env.ADMIN_WALLET_ADDRESS;
+
+        const txs = await prisma.cryptoTransaction.findMany({
+            where: adminWallet ? { toAddress: adminWallet } : {},
             include: {
-                User: {
-                    select: {
-                        email: true,
-                        fullName: true
+                order: {
+                    include: {
+                        User: true
                     }
-                }
+                },
+                cryptocurrency: true
             },
-            orderBy: {
-                createdAt: 'desc'
-            }
+            orderBy: { createdAt: 'desc' }
         });
 
         // Create CSV content
-        let csv = 'Mã Đơn,Người Dùng,Email,Số Tiền (VND),Số Tiền (SGB),Hash Giao Dịch,Ngày Tạo\n';
+        let csv = 'Mã Giao Dịch, Mã Đơn,Người Dùng,Email,Số Tiền (Crypto),Số Tiền (VND),Mã Token/Currency,Hash Giao Dịch,Ngày Tạo\n';
         
-        transactions.forEach((tx: any) => {
-            const sgbAmount = (tx.totalPrice / 300000).toFixed(4);
+        txs.forEach((tx: any) => {
+            const sgbAmount = tx.amount || '';
+            const vnd = tx.amountInFiat ?? '';
             const createdAt = new Date(tx.createdAt).toLocaleString('vi-VN');
-            csv += `${tx.id},"${tx.User?.fullName || 'N/A'}","${tx.User?.email || 'N/A'}",${tx.totalPrice},${sgbAmount},"${tx.paymentRef}","${createdAt}"\n`;
+            csv += `${tx.id},${tx.orderId},"${tx.order?.User?.fullName || 'N/A'}","${tx.order?.User?.email || 'N/A'}",${sgbAmount},${vnd},"${tx.cryptocurrency?.code || ''}","${tx.transactionHash}","${createdAt}"\n`;
         });
 
         // Send CSV file
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', 'attachment; filename="crypto-transactions.csv"');
-        res.send(csv);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="crypto-transactions.csv"');
+    res.send(csv);
     } catch (error: any) {
         console.error('Error exporting transactions:', error);
         res.status(500).json({ error: error.message });

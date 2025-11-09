@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="Edit Cryptocurrency - Admin" />
+    <meta name="author" content="LianHarman" />
+    <title>Chỉnh sửa tiền ảo</title>
+    <link rel="icon" type="image/svg+xml" href="/im/Logo-Admin.svg">
+    <link href="/admin/css/styles.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.27/sweetalert2.min.css" rel="stylesheet">
+    <style>
+    .crypto-card {
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    .crypto-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+    }
+    .form-section {
+        background: #f8f9fa;
+        padding: 25px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    .status-active {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .status-inactive {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem 0;
+        border-radius: 12px;
+        color: white;
+        margin-bottom: 2rem;
+    }
+    .page-header .page-title {
+        color: white;
+        margin: 0;
+        font-weight: 600;
+    }
+    .form-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.7rem;
+    }
+    .form-control:disabled {
+        background-color: #e9ecef;
+        color: #666;
+        cursor: not-allowed;
+        border-color: #dee2e6;
+    }
+    .form-control-lg {
+        font-size: 1.1rem;
+        border-radius: 8px;
+    }
+    .input-group-text {
+        background-color: #f0f0f0;
+        border-left: 0;
+        font-weight: 600;
+        color: #667eea;
+        border-color: #dee2e6;
+    }
+    .form-footer {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .card {
+        box-shadow: 0 0 20px rgba(0,0,0,0.08);
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+    }
+    .card-body {
+        padding: 2rem;
+    }
+    .btn-link {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    .btn-link:hover {
+        color: #764ba2;
+        text-decoration: underline;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 0.7rem 2rem;
+        transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        transform: translateY(-2px);
+    }
+    #copyAddress {
+        transition: all 0.3s ease;
+        cursor: pointer;
+        color: #667eea;
+        font-weight: 600;
+    }
+    #copyAddress:hover {
+        opacity: 0.8;
+        color: #764ba2;
+    }
+    .alert-info {
+        background-color: #cfe2ff;
+        border-color: #b6d4fe;
+        color: #084298;
+        border-radius: 8px;
+    }
+    .alert-warning {
+        background-color: #fff3cd;
+        border-color: #ffecb5;
+        color: #664d03;
+        border-radius: 8px;
+    }
+    .row {
+        margin-bottom: 1.5rem;
+    }
+    .container-xl {
+        max-width: 1200px;
+    }
+    .mb-3 {
+        margin-bottom: 1.5rem;
+    }
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    main {
+        flex: 1;
+    }
+    .page-wrapper {
+        padding: 1rem 0;
+    }
+    .page-wrapper .container-xl {
+        max-width: 100%;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+</style>
+
+</head>
+
+<body class="sb-nav-fixed">
+    <!-- header -->
+    <%- include('../layout/header.ejs') -%>
+
+    <!-- main content -->
+    <div id="layoutSidenav">
+        <!-- sidenav -->
+        <%- include('../layout/sidenav.ejs') -%>
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid px-4">
+                    <div class="d-flex justify-content-between align-items-center mt-4 mb-1">
+                        <div class="d-flex flex-column w-100">
+                            <h1 class="fw-bold text-primary mb-1"><i class="fas fa-edit"></i> Chỉnh sửa tiền ảo</h1>
+                            <ol class="breadcrumb bg-light rounded shadow-sm px-3 py-2 mt-2" style="cursor: pointer;">
+                                <li class="breadcrumb-item"><a href="/admin" class="text-decoration-none">Dashboard</a></li>
+                                <li class="breadcrumb-item"><a href="/admin/cryptocurrency" class="text-decoration-none">Cryptocurrency Management</a></li>
+                                <li class="breadcrumb-item active"><%= crypto.name %></li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-lg-8 offset-lg-2">
+                <div class="card">
+                    <div class="card-body">
+                        <form id="editForm" method="POST" action="/admin/cryptocurrency/update">
+                            <div class="mb-3">
+                                <label class="form-label">Tên tiền ảo</label>
+                                <input type="text" class="form-control" value="<%= crypto.name %>" disabled>
+                                <small class="form-text text-muted">Không thể thay đổi tên tiền ảo</small>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Ký hiệu</label>
+                                        <input type="text" class="form-control" value="<%= crypto.symbol %>" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Mã tiền ảo</label>
+                                        <input type="text" class="form-control" value="<%= crypto.code %>" disabled>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Chain Name</label>
+                                        <input type="text" class="form-control" value="<%= crypto.chainName %>" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Chain ID</label>
+                                        <input type="text" class="form-control" value="<%= crypto.chainId %>" disabled>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Contract Address</label>
+                                <input type="text" class="form-control" value="<%= crypto.contractAddress %>" disabled>
+                                <small class="form-text text-muted d-block mt-2">
+                                    <i class="fas fa-copy"></i>
+                                    <span id="copyAddress" style="cursor: pointer; color: #0066cc;">Sao chép địa chỉ</span>
+                                </small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">RPC URL</label>
+                                <input type="text" class="form-control" value="<%= crypto.rpcUrl %>" disabled>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Decimals</label>
+                                <input type="text" class="form-control" value="<%= crypto.decimals %>" disabled>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Mô tả</label>
+                                <textarea class="form-control" rows="3" disabled><%= crypto.description %></textarea>
+                            </div>
+
+                            <!-- Price Field - Editable -->
+                            <div class="mb-3">
+                                <label class="form-label" style="color: #0066cc; font-weight: bold;">
+                                    <i class="fas fa-edit"></i> Giá tiền ảo (VND) - <span style="color: #ff6b6b;">Chỉ trường này có thể chỉnh sửa</span>
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" 
+                                           class="form-control form-control-lg" 
+                                           id="priceVND" 
+                                           name="priceVND" 
+                                           value="<%= crypto.priceVND %>" 
+                                           step="0.01"
+                                           min="0"
+                                           placeholder="Nhập giá"
+                                           required>
+                                    <span class="input-group-text">₫</span>
+                                </div>
+                                <small class="form-text text-muted d-block mt-2">Giá hiện tại: <strong>₫<%= crypto.priceVND %></strong></small>
+                            </div>
+
+                            <% if (isActive) { %>
+                                <div class="alert alert-info" role="alert">
+                                    <i class="fas fa-info-circle me-2"></i><strong>Tiền ảo này đang hoạt động</strong> - Chỉ có thể chỉnh sửa giá
+                                </div>
+                            <% } else { %>
+                                <div class="alert alert-warning" role="alert">
+                                    <i class="fas fa-exclamation-triangle me-2"></i><strong>Tiền ảo này không hoạt động</strong>
+                                </div>
+                            <% } %>
+
+                            <input type="hidden" name="cryptoId" value="<%= crypto.id %>">
+
+                            <div class="form-footer">
+                                <div class="d-flex justify-content-between w-100">
+                                    <a href="/admin/cryptocurrency" class="btn btn-link">
+                                        <i class="fas fa-arrow-left me-2"></i>Quay lại
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Lưu thay đổi
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    // Copy address to clipboard
+    document.getElementById('copyAddress').addEventListener('click', function() {
+        const address = '<%= crypto.contractAddress %>';
+        navigator.clipboard.writeText(address).then(function() {
+            // Show notification
+            const element = document.getElementById('copyAddress');
+            const originalText = element.textContent;
+            element.textContent = 'Đã sao chép!';
+            element.style.color = '#28a745';
+            
+            setTimeout(function() {
+                element.textContent = originalText;
+                element.style.color = '#0066cc';
+            }, 2000);
+        }).catch(function(err) {
+            console.error('Lỗi khi sao chép:', err);
+        });
+    });
+
+    // Form submission
+    document.getElementById('editForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const cryptoId = document.querySelector('input[name="cryptoId"]').value;
+        const priceVND = document.getElementById('priceVND').value;
+
+        // Validate price
+        if (!priceVND || parseFloat(priceVND) <= 0) {
+            alert('Vui lòng nhập giá tiền ảo hợp lệ');
+            return;
+        }
+
+        // Show loading
+        const submitBtn = document.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang lưu...';
+
+        try {
+            const response = await fetch('/admin/cryptocurrency/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    cryptoId: cryptoId,
+                    priceVND: priceVND
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Show success message with SweetAlert2 or alert fallback
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Thành công!',
+                        text: result.message || 'Cập nhật giá tiền ảo thành công',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#667eea'
+                    }).then(() => {
+                        window.location.href = '/admin/cryptocurrency';
+                    });
+                } else {
+                    alert(result.message || 'Cập nhật giá tiền ảo thành công');
+                    window.location.href = '/admin/cryptocurrency';
+                }
+            } else {
+                // Show error message
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi!',
+                        text: result.message || 'Không thể cập nhật giá tiền ảo',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#667eea'
+                    });
+                } else {
+                    alert(result.message || 'Không thể cập nhật giá tiền ảo');
+                }
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Lỗi khi cập nhật: ' + error.message,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#667eea'
+                });
+            } else {
+                alert('Lỗi khi cập nhật: ' + error.message);
+            }
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    });
+</script>
+
+                        </form>
+                    </div>
+                </div>
+                        </div>
+                    </div>
+            </main>
+            <%- include('../layout/footer.ejs') -%>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.27/sweetalert2.min.js"></script>
+</body>
+</html>

@@ -169,6 +169,286 @@ async function initWeb3() {
     }
 }
 
+// Hàm để hiển thị modal thanh toán từ checkout page
+async function showCryptoPaymentModal(options) {
+    const {
+        adminWallet,
+        amount,
+        vndAmount,
+        receiverName,
+        receiverPhone,
+        receiverAddress,
+        receiverEmail,
+        receiverNote,
+        cartItems
+    } = options;
+
+    console.log('Show crypto payment modal with options:', options);
+    
+    try {
+        // 0. Kiểm tra MetaMask đã được cài đặt
+        if (!await checkAndInstallMetaMask()) {
+            return;
+        }
+
+        // 1. Kiểm tra và khởi tạo Web3
+        showCryptoMessage(`
+            <div class="text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Đang kết nối...</span>
+                </div>
+                <div>Đang kết nối ví Metamask...</div>
+            </div>
+        `);
+
+        const connected = await initWeb3();
+        if (!connected) {
+            throw new Error('Không thể kết nối với Metamask');
+        }
+
+        const adminAddress = adminWallet.toLowerCase();
+        if (!isValidEthereumAddress(adminAddress)) {
+            throw new Error('Địa chỉ ví admin không hợp lệ');
+        }
+
+        // 2. Kiểm tra tài khoản người dùng
+        if (userAccount.toLowerCase() === adminAddress) {
+            throw new Error('Bạn không thể thanh toán cho chính mình bằng ví admin!');
+        }
+
+        // 3. Tính toán số tiền
+        const priceInSGB = amount;
+        const weiValue = web3.utils.toWei(priceInSGB.toString(), 'ether');
+
+        console.log('Payment details:', {
+            vndAmount,
+            priceInSGB,
+            weiValue,
+            adminAddress,
+            userAccount
+        });
+
+        // 4. Hiển thị thông tin giao dịch và yêu cầu xác nhận
+        // Use data-* attributes and attach event listener to avoid inline onclick escaping issues
+        const encodedCart = encodeURIComponent(JSON.stringify(cartItems || []));
+        const encodedReceiverName = encodeURIComponent(receiverName || '');
+        const encodedReceiverPhone = encodeURIComponent(receiverPhone || '');
+        const encodedReceiverAddress = encodeURIComponent(receiverAddress || '');
+        const encodedReceiverEmail = encodeURIComponent(receiverEmail || '');
+        const encodedReceiverNote = encodeURIComponent(receiverNote || '');
+
+        showCryptoMessage(`
+            <div class="text-center mb-4">
+                <h5>Chi tiết giao dịch</h5>
+                <div class="table-responsive">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td class="text-end">Số tiền (VND):</td>
+                            <td class="text-start fw-bold">${new Intl.NumberFormat('vi-VN').format(vndAmount)} VND</td>
+                        </tr>
+                        <tr>
+                            <td class="text-end">Số tiền (SGB):</td>
+                            <td class="text-start fw-bold">${priceInSGB} SGB</td>
+                        </tr>
+                        <tr>
+                            <td class="text-end">Ví nhận:</td>
+                            <td class="text-start fw-bold text-break" style="font-size: 0.9rem;">${adminAddress}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-end">Ví gửi:</td>
+                            <td class="text-start fw-bold text-break" style="font-size: 0.9rem;">${userAccount}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="alert alert-info mt-3" role="alert">
+                    <small>Vui lòng xác nhận giao dịch trên ví Metamask của bạn</small>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" id="cryptoConfirmBtn" class="btn btn-primary flex-grow-1"
+                    data-admin="${adminAddress}"
+                    data-wei="${weiValue}"
+                    data-vnd="${vndAmount}"
+                    data-cart="${encodedCart}"
+                    data-rname="${encodedReceiverName}"
+                    data-rphone="${encodedReceiverPhone}"
+                    data-raddress="${encodedReceiverAddress}"
+                    data-remail="${encodedReceiverEmail}"
+                    data-rnote="${encodedReceiverNote}">Xác nhận thanh toán</button>
+                <button type="button" class="btn btn-secondary" id="cryptoCancelBtn">Hủy</button>
+            </div>
+        `);
+
+        // Attach event listeners after modal is rendered
+        setTimeout(() => {
+            try {
+                const confirmBtn = document.getElementById('cryptoConfirmBtn');
+                const cancelBtn = document.getElementById('cryptoCancelBtn');
+                if (confirmBtn) {
+                    confirmBtn.addEventListener('click', async function () {
+                        // parse data attributes
+                        const admin = this.getAttribute('data-admin');
+                        const wei = this.getAttribute('data-wei');
+                        const vnd = this.getAttribute('data-vnd');
+                        const cartStr = decodeURIComponent(this.getAttribute('data-cart') || '[]');
+                        const rname = decodeURIComponent(this.getAttribute('data-rname') || '');
+                        const rphone = decodeURIComponent(this.getAttribute('data-rphone') || '');
+                        const raddress = decodeURIComponent(this.getAttribute('data-raddress') || '');
+                        const remail = decodeURIComponent(this.getAttribute('data-remail') || '');
+                        const rnote = decodeURIComponent(this.getAttribute('data-rnote') || '');
+
+                        let cartItemsParsed = [];
+                        try {
+                            cartItemsParsed = JSON.parse(cartStr);
+                        } catch (e) {
+                            console.warn('Failed to parse cart items from dataset', e);
+                        }
+
+                        // Call confirm function
+                        await confirmCheckoutCryptoPayment(admin, wei, vnd, JSON.stringify(cartItemsParsed), rname, rphone, raddress, remail, rnote);
+                    });
+                }
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('click', function () {
+                        closeCryptoModal();
+                    });
+                }
+            } catch (e) {
+                console.error('Error attaching crypto modal buttons:', e);
+            }
+        }, 50);
+    } catch (error) {
+        console.error('Error in showCryptoPaymentModal:', error);
+        showCryptoMessage(`<div class="alert alert-danger" role="alert">Lỗi: ${error.message}</div><button type="button" class="btn btn-secondary mt-3" onclick="closeCryptoModal()">Đóng</button>`);
+    }
+}
+
+// Hàm xác nhận thanh toán crypto từ checkout
+async function confirmCheckoutCryptoPayment(adminAddress, weiValue, vndAmount, cartItemsStr, receiverName, receiverPhone, receiverAddress, receiverEmail, receiverNote) {
+    try {
+        console.log('Confirming checkout crypto payment...', { adminAddress, weiValue, vndAmount });
+
+        // Phân tích cartItems
+        let cartItems = [];
+        try {
+            cartItems = typeof cartItemsStr === 'string' ? JSON.parse(cartItemsStr) : (cartItemsStr || []);
+        } catch (e) {
+            console.warn('Could not parse cartItems:', e);
+        }
+
+        // Ensure web3 and userAccount are available; try to init if missing
+        if (!web3 || !userAccount) {
+            console.log('web3 or userAccount missing, attempting to initWeb3');
+            const ok = await initWeb3();
+            if (!ok) throw new Error('Không thể kết nối tới MetaMask');
+        }
+
+        console.log('web3 ready, userAccount:', userAccount);
+
+        // 5. Gửi giao dịch (use window.ethereum.request for a direct MetaMask prompt)
+        showCryptoMessage(`
+            <div class="text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Đang gửi giao dịch...</span>
+                </div>
+                <div>Đang gửi giao dịch... Vui lòng xác nhận trong MetaMask</div>
+            </div>
+        `);
+
+        let txHash = null;
+        try {
+            // eth_sendTransaction expects hex value for 'value'
+            const params = [{
+                from: userAccount,
+                to: adminAddress,
+                value: web3.utils.toHex(weiValue)
+            }];
+
+            console.log('Calling window.ethereum.request eth_sendTransaction with params', params);
+
+            if (window.ethereum && window.ethereum.request) {
+                txHash = await window.ethereum.request({ method: 'eth_sendTransaction', params });
+                console.log('eth_sendTransaction returned txHash:', txHash);
+            } else {
+                // Fallback to web3 if ethereum.request not available
+                console.warn('window.ethereum.request not available, falling back to web3.eth.sendTransaction');
+                const receipt = await web3.eth.sendTransaction({ from: userAccount, to: adminAddress, value: weiValue });
+                txHash = receipt && (receipt.transactionHash || receipt);
+                console.log('web3 sendTransaction result:', receipt);
+            }
+        } catch (txError) {
+            console.error('Transaction error:', txError);
+            throw txError;
+        }
+
+        console.log('Transaction hash:', txHash);
+
+        // 6. Gửi thông tin giao dịch đến server
+        showCryptoMessage(`
+            <div class="text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Đang xác nhận...</span>
+                </div>
+                <div>Đang xác nhận giao dịch với server...</div>
+            </div>
+        `);
+
+        console.log('Sending confirmation to server...');
+        const response = await fetch('/api/crypto/confirm-payment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include', // include cookies/session so server can authenticate req.user
+            body: JSON.stringify({
+                transactionHash: txHash,
+                amount: parseFloat(web3.utils.fromWei(weiValue, 'ether')),
+                vndAmount: vndAmount,
+                currency: 'SGB',
+                receiverName: receiverName,
+                receiverPhone: receiverPhone,
+                receiverAddress: receiverAddress,
+                receiverEmail: receiverEmail,
+                receiverNote: receiverNote,
+                cartItems: cartItems
+            })
+        });
+
+        console.log('Server confirmation HTTP status:', response.status);
+        const data = await response.json();
+        console.log('Server response body:', data);
+
+        if (data.success) {
+            // 7. Hiển thị thành công
+            showCryptoMessage(`
+                <div class="text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5>Thanh toán thành công!</h5>
+                    <p>Mã giao dịch: <small class="text-break">${txHash}</small></p>
+                    <p class="small">Đơn hàng của bạn đang được xử lý. Vui lòng chờ chuyển hướng...</p>
+                </div>
+            `);
+
+            // 8. Chuyển hướng sau 2 giây
+            setTimeout(() => {
+                window.location.href = '/paypal-success?orderId=' + data.orderId;
+            }, 2000);
+        } else {
+            throw new Error(data.error || 'Lỗi thanh toán');
+        }
+    } catch (error) {
+        console.error('Error in confirmCheckoutCryptoPayment:', error);
+        showCryptoMessage(`
+            <div class="alert alert-danger" role="alert">
+                <strong>Lỗi:</strong> ${error.message}
+            </div>
+            <button type="button" class="btn btn-secondary mt-3" onclick="closeCryptoModal()">Đóng</button>
+        `);
+    }
+}
+
 // Main crypto payment functionality
 
 async function purchaseWithCrypto(productId, priceInVND) {
@@ -367,9 +647,15 @@ async function purchaseWithCrypto(productId, priceInVND) {
 
 // Tính và hiển thị giá crypto khi trang tải
 document.addEventListener('DOMContentLoaded', () => {
-    const productPrice = document.getElementById('product-price').dataset.price;
-    const priceInSGB = convertVNDtoSGB(productPrice);
-    document.querySelector('.crypto-amount').textContent = priceInSGB;
+    const productPriceEl = document.getElementById('product-price');
+    if (productPriceEl && productPriceEl.dataset) {
+        const productPrice = productPriceEl.dataset.price;
+        const priceInSGB = convertVNDtoSGB(productPrice);
+        const cryptoAmountEl = document.querySelector('.crypto-amount');
+        if (cryptoAmountEl) cryptoAmountEl.textContent = priceInSGB;
+    } else {
+        console.warn('product-price element or dataset not found; skipping crypto amount display');
+    }
 
     // Thêm event listener để xóa backdrop khi modal bị đóng
     const cryptoModal = document.getElementById('cryptoModal');

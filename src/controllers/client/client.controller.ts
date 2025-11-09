@@ -34,7 +34,8 @@ const PostAddProductToCart = async (req: Request, res: Response) => {
     const user = req?.user as UserRole;
     const redirectUrl = req.get('Referer') || '/';
     if (user) {
-        await AddProductToCart(user, quantity ? Number(quantity) : 1, Number(id), Number(productVariantId)); // Assuming quantity is 1 for simplicity
+        const pvId = (productVariantId === undefined || productVariantId === null || productVariantId === '') ? undefined : Number(productVariantId);
+        await AddProductToCart(user, quantity ? Number(quantity) : 1, Number(id), pvId); // pvId may be undefined
         return res.redirect(redirectUrl);
     } else {
         return res.redirect('/login');

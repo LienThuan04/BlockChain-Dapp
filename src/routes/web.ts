@@ -10,10 +10,12 @@ import { isAdmin, islogin } from 'middleware/auth';
 import { GetDetailOrder, PostUpdateOrderById } from 'controllers/admin/order.controller';
 import { GetPageCreateTarget, GetPageTarget, GetViewTarget, PostCreateTarget, PostDelTarget, PostUpdateTarget } from 'controllers/admin/target.controller';
 import { GetPageCreateFactory, GetPageFactory, GetViewFactory, PostCreateFactory, PostDelFactory, PostUpdateFactory } from 'controllers/admin/factory.controller';
-import { createPaypalOrder, PaypalSuccess, PostPlaceOrder } from 'controllers/client/Payment.controller';
+import { createPaypalOrder, PaypalSuccess, PostPlaceOrder, DebugPaypal } from 'controllers/client/Payment.controller';
 import { GetReviewPageForAdmin } from 'controllers/admin/review.controller';
 import { GetRevenue } from 'controllers/admin/Revenue.controller';
 import { getCryptoWalletPage, exportCryptoTransactions, getTransactionDetails } from 'controllers/admin/crypto-wallet.controller';
+import { getWalletManagementPage, addNewWallet, switchActiveWallet, deleteWallet, getWalletDetails } from 'controllers/admin/crypto-wallet-management.controller';
+import { getCryptocurrencyManagementPage, addCryptocurrency, setActiveCryptocurrency, updateCryptocurrency, deleteCryptocurrency, getActiveCryptocurrency, getCryptocurrencyDetails, getEditPage } from 'controllers/admin/cryptocurrency-management.controller';
 import cryptoRoutes from './crypto.routes';
 
 
@@ -60,9 +62,20 @@ const webroutes = (app: Express) => {
 
     //Payment for client
     router.post('/place-order', PostPlaceOrder);
-    router.post('/api/paypal/create-order', createPaypalOrder);
+    // Wrap async handler to satisfy TypeScript overloads and ensure errors are passed to next()
+    router.post('/api/paypal/create-order', (req: Request, res: Response, next) => {
+        // call the async controller and forward errors to express error handler
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        Promise.resolve(createPaypalOrder(req, res)).catch(next);
+    });
     //paypal url complete payment
     router.get('/paypal-success', PaypalSuccess);
+    // Debug endpoint to test PayPal connectivity (returns PayPal SDK response). Remove/secure in production.
+    router.get('/debug/paypal', (req: Request, res: Response, next) => {
+        // call DebugPaypal async and forward errors to express
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        Promise.resolve(DebugPaypal(req, res)).catch(next);
+    });
 
 
     //admin routes
@@ -116,6 +129,23 @@ const webroutes = (app: Express) => {
     router.get('/admin/crypto-wallet', getCryptoWalletPage);
     router.get('/admin/crypto-wallet/export', exportCryptoTransactions);
     router.get('/admin/crypto-wallet/transaction/:orderId', getTransactionDetails);
+    
+    // Crypto Wallet Management Routes
+    router.get('/admin/crypto-wallet/management', getWalletManagementPage);
+    router.post('/admin/crypto-wallet/management/add', addNewWallet);
+    router.post('/admin/crypto-wallet/management/switch', switchActiveWallet);
+    router.post('/admin/crypto-wallet/management/delete', deleteWallet);
+    router.get('/admin/crypto-wallet/management/details/:walletId', getWalletDetails);
+
+    // Cryptocurrency Management Routes
+    router.get('/admin/cryptocurrency', getCryptocurrencyManagementPage);
+    router.get('/admin/cryptocurrency/edit/:id', getEditPage);
+    router.post('/admin/cryptocurrency/add', addCryptocurrency);
+    router.post('/admin/cryptocurrency/activate', setActiveCryptocurrency);
+    router.post('/admin/cryptocurrency/update', updateCryptocurrency);
+    router.post('/admin/cryptocurrency/delete', deleteCryptocurrency);
+    router.get('/api/cryptocurrency/active', getActiveCryptocurrency);
+    router.get('/api/cryptocurrency/:cryptoId', getCryptocurrencyDetails);
 
     
 
@@ -125,6 +155,10 @@ const webroutes = (app: Express) => {
     router.get('/admin/crypto-wallet', getCryptoWalletPage);
     router.get('/admin/crypto-wallet/export', exportCryptoTransactions);
     router.get('/admin/crypto-wallet/transaction/:orderId', getTransactionDetails);
+
+    
+
+     // Use the router
 
     
 

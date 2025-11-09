@@ -176,6 +176,40 @@ const initDatabase = async () => {
         });
     }
 
+    // Seed default cryptocurrency (SGB)
+    const countCrypto = await (prisma as any).cryptocurrency.count();
+    if (countCrypto === 0) {
+        await (prisma as any).cryptocurrency.create({
+            data: {
+                name: 'Songbird',
+                code: 'SGB',
+                symbol: '⚡',
+                priceVND: 8750,
+                chainName: 'Flare Coston Testnet',
+                rpcUrl: 'https://coston-api.flare.network/ext/bc/C/rpc',
+                chainId: '0x10',
+                contractAddress: null,
+                decimals: 18,
+                description: 'Songbird - Flare Network native token',
+                isActive: true
+            }
+        });
+        console.log('✅ Created default cryptocurrency: SGB');
+    }
+
+    // Seed default wallet
+    const countWallet = await (prisma as any).cryptoWallet.count();
+    if (countWallet === 0) {
+        await (prisma as any).cryptoWallet.create({
+            data: {
+                walletAddress: process.env.ADMIN_WALLET_ADDRESS || '0xeee8ba2b2774168aa7042cbd93ecde8d8cc7720f',
+                privateKey: process.env.ADMIN_PRIVATE_KEY || '8c86cad740757db1169d111a5529d55452074315094fcafa273a1e06d9e6933f',
+                isActive: true
+            }
+        });
+        console.log('✅ Created default wallet: Admin Wallet');
+    }
+
     if (CountUser !== 0 && CountRole !== 0 && countProduct !== 0) {
         console.log('Database already seeded with admin user.');
         return;

@@ -1,0 +1,211 @@
+import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+// Get wallet management page
+export const getWalletManagementPage = async (req: Request, res: Response): Promise<void> => {
+    try {
+        // Get current active wallet
+        const activeWallet = await (prisma as any).cryptoWallet.findFirst({
+            where: { isActive: true }
+        });
+
+        // Get all wallets history
+        const walletsHistory = await (prisma as any).cryptoWallet.findMany({
+            orderBy: { createdAt: 'desc' },
+            take: 10
+        });
+
+        res.render('admin/crypto-wallet/management.ejs', {
+            activeWallet: activeWallet,
+            walletsHistory: walletsHistory,
+            error: null
+        });
+    } catch (error: any) {
+        console.error('Error in getWalletManagementPage:', error);
+        res.status(500).render('admin/crypto-wallet/management.ejs', {
+            activeWallet: null,
+            walletsHistory: [],
+            error: 'Có lỗi xảy ra: ' + error.message
+        });
+    }
+};
+
+// Add new wallet
+export const addNewWallet = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { walletAddress, privateKey } = req.body;
+
+        if (!walletAddress || !privateKey) {
+            res.status(400).json({ error: 'Địa chỉ ví và private key là bắt buộc' });
+            return;
+        }
+
+        // Validate wallet address format (Ethereum-like)
+        if (!/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+            res.status(400).json({ error: 'Địa chỉ ví không hợp lệ (phải là 0x + 40 ký tự hex)' });
+            return;
+        }
+
+        // Check if wallet already exists
+        const existingWallet = await (prisma as any).cryptoWallet.findUnique({
+            where: { walletAddress }
+        });
+
+        if (existingWallet) {
+            res.status(400).json({ error: 'Ví này đã được thêm rồi' });
+            return;
+        }
+
+        // Deactivate current active wallet
+        await (prisma as any).cryptoWallet.updateMany({
+            where: { isActive: true },
+            data: { isActive: false }
+        });
+
+        // Add new wallet and set as active
+        const newWallet = await (prisma as any).cryptoWallet.create({
+            data: {
+                walletAddress,
+                privateKey,
+                isActive: true
+            }
+        });
+
+        // Update environment variable (for runtime)
+        process.env.ADMIN_WALLET_ADDRESS = walletAddress;
+
+        res.json({
+            success: true,
+            message: 'Thêm ví mới thành công',
+            wallet: {
+                id: newWallet.id,
+                walletAddress: newWallet.walletAddress,
+                createdAt: newWallet.createdAt
+            }
+        });
+    } catch (error: any) {
+        console.error('Error in addNewWallet:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Switch active wallet
+export const switchActiveWallet = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { walletId } = req.body;
+
+        if (!walletId) {
+            res.status(400).json({ error: 'Mã ví là bắt buộc' });
+            return;
+        }
+
+        // Get wallet to switch to
+        const wallet = await (prisma as any).cryptoWallet.findUnique({
+            where: { id: parseInt(walletId) }
+        });
+
+        if (!wallet) {
+            res.status(404).json({ error: 'Không tìm thấy ví' });
+            return;
+        }
+
+        // Deactivate all wallets
+        await (prisma as any).cryptoWallet.updateMany({
+            data: { isActive: false }
+        });
+
+        // Activate selected wallet
+        await (prisma as any).cryptoWallet.update({
+            where: { id: parseInt(walletId) },
+            data: { isActive: true }
+        });
+
+        // Update environment variable
+        process.env.ADMIN_WALLET_ADDRESS = wallet.walletAddress;
+
+        res.json({
+            success: true,
+            message: 'Chuyển ví thành công',
+            wallet: {
+                walletAddress: wallet.walletAddress,
+                createdAt: wallet.createdAt
+            }
+        });
+    } catch (error: any) {
+        console.error('Error in switchActiveWallet:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Delete wallet
+export const deleteWallet = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { walletId } = req.body;
+
+        if (!walletId) {
+            res.status(400).json({ error: 'Mã ví là bắt buộc' });
+            return;
+        }
+
+        const wallet = await (prisma as any).cryptoWallet.findUnique({
+            where: { id: parseInt(walletId) }
+        });
+
+        if (!wallet) {
+            res.status(404).json({ error: 'Không tìm thấy ví' });
+            return;
+        }
+
+        // Don't allow deleting active wallet
+        if (wallet.isActive) {
+            res.status(400).json({ error: 'Không thể xóa ví đang hoạt động' });
+            return;
+        }
+
+        // Delete wallet
+        await (prisma as any).cryptoWallet.delete({
+            where: { id: parseInt(walletId) }
+        });
+
+        res.json({
+            success: true,
+            message: 'Xóa ví thành công'
+        });
+    } catch (error: any) {
+        console.error('Error in deleteWallet:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Get wallet details (show private key - be careful!)
+export const getWalletDetails = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { walletId } = req.params;
+
+        const wallet = await (prisma as any).cryptoWallet.findUnique({
+            where: { id: parseInt(walletId) }
+        });
+
+        if (!wallet) {
+            res.status(404).json({ error: 'Không tìm thấy ví' });
+            return;
+        }
+
+        // Mask private key for security
+        const maskedPrivateKey = wallet.privateKey.substring(0, 10) + '...' + wallet.privateKey.substring(wallet.privateKey.length - 10);
+
+        res.json({
+            id: wallet.id,
+            walletAddress: wallet.walletAddress,
+            privateKey: maskedPrivateKey,
+            isActive: wallet.isActive,
+            createdAt: wallet.createdAt,
+            updatedAt: wallet.updatedAt
+        });
+    } catch (error: any) {
+        console.error('Error in getWalletDetails:', error);
+        res.status(500).json({ error: error.message });
+    }
+};

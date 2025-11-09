@@ -184,6 +184,7 @@ model Order {
 
   orderDetails OrderDetail[]
   reviews Review[]
+  cryptoTransactions CryptoTransaction[]
 
   @@map("orders")
 }
@@ -218,3 +219,60 @@ model Review {
   orderId Int
   createdAt DateTime @default(now()) //lưu ngày tạo
 }
+
+model CryptoWallet {
+  id Int @id @default(autoincrement())
+  walletAddress String @unique @db.VarChar(255)
+  privateKey String @db.Text
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("crypto_wallets")
+}
+
+model Cryptocurrency {
+  id Int @id @default(autoincrement())
+  name String @unique @db.VarChar(100) // Bitcoin, Ethereum, Songbird...
+  code String @unique @db.VarChar(20) // BTC, ETH, SGB...
+  symbol String @db.VarChar(10) // ฿, Ξ, ⚡...
+  priceVND Float @default(8750) // Price in VND (1 SGB = 8,750 VND)
+  chainName String @db.VarChar(100) // Bitcoin, Ethereum, Flare Coston...
+  rpcUrl String @db.VarChar(500) // RPC endpoint
+  chainId String @db.VarChar(50) // Chain ID (0x10 for Coston)
+  contractAddress String? @db.VarChar(255) // For tokens on existing chain
+  decimals Int @default(18) // Token decimals
+  isActive Boolean @default(false)
+  description String? @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cryptoTransactions CryptoTransaction[]
+
+  @@map("cryptocurrencies")
+}
+
+model CryptoTransaction {
+  id Int @id @default(autoincrement())
+  transactionHash String @unique @db.VarChar(255)
+  fromAddress String @db.VarChar(255)
+  toAddress String @db.VarChar(255)
+  amount String @db.VarChar(255) // Lưu số lượng crypto dạng string để tránh mất precision
+  amountInFiat Float // Số tiền tương đương fiat
+  gasUsed String? @db.VarChar(255)
+  gasPrice String? @db.VarChar(255)
+  status String @db.VarChar(50) // PENDING, SUCCESS, FAILED
+  description String? @db.Text
+
+  order Order @relation(fields: [orderId], references: [id])
+  orderId Int
+
+  cryptocurrency Cryptocurrency @relation(fields: [cryptoId], references: [id])
+  cryptoId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("crypto_transactions")
+}
+

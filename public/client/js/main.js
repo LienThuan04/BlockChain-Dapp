@@ -376,8 +376,11 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const productId = $(this).attr('data-product-id');
-        const productVariantId = $('input[name="productVariantId"]').val() || null;
+    const productId = $(this).attr('data-product-id');
+    // Find variant input within the same product card to avoid picking the first global input
+    const card = $(this).closest('.product-card');
+    // Prefer the checked radio (if any). Fall back to any input (hidden default) if not checked.
+    const productVariantId = (card.find('input[name="productVariantId"]:checked').val() || card.find('input[name="productVariantId"]').val()) || null;
         $.ajax({
             url: `${window.location.origin}/api/add-product-to-cart`,
             type: 'POST',
@@ -425,8 +428,11 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             return;
         };
-        const productId = $(this).attr('data-product-id');
-        const productVariantId = $('input[name="productVariantId"]').val() || null;
+    const productId = $(this).attr('data-product-id');
+    // On product detail page, find the variant input inside the nearest form
+    const form = $(this).closest('form');
+    // Use the checked radio value when present so the selected variant is sent (don't send default implicitly)
+    const productVariantId = (form.find('input[name="productVariantId"]:checked').val() || form.find('input[name="productVariantId"]').val()) || null;
         const quantity = parseInt($('#quantityDetail').val()) || 1;
         $.ajax({
             url: `${window.location.origin}/api/add-product-to-cart`,
@@ -574,13 +580,15 @@ $(document).on('blur', 'input[data-InputCartDetail-id]', function () {
     }
 });
 
-// Xử lý riêng khi chọn PayPal, còn lại giữ nguyên logic cũ
+// Xử lý riêng khi chọn PayPal hoặc Crypto, còn lại giữ nguyên logic cũ
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.querySelector('form[action="/place-order"]');
     const btnCheckout = document.getElementById('btnCheckoutPay');
     if (form && btnCheckout) {
         form.addEventListener('submit', async function (e) {
             const radioPaypal = form.querySelector('input[type="radio"][name="paymentMethod"][value="PAYPAL"]');
+            const radioCrypto = form.querySelector('input[type="radio"][name="paymentMethod"][value="CRYPTO"]');
+            
             if (radioPaypal && radioPaypal.checked) {
                 e.preventDefault();
                 btnCheckout.disabled = true;
@@ -613,13 +621,24 @@ document.addEventListener('DOMContentLoaded', function () {
                             ListIdDetailCartPay: ListIdDetailCartPay
                         })
                     });
-                    const data = await res.json();
-                    console.log(data);
-                    if (data && data.approvalUrl) {
+                    let data = null;
+                    try {
+                        data = await res.json();
+                    } catch (parseErr) {
+                        console.error('Failed to parse PayPal response as JSON', parseErr);
+                        alert('Lỗi khi nhận phản hồi từ server PayPal. Xem console server để biết thêm chi tiết.');
+                        btnCheckout.disabled = false;
+                        btnCheckout.innerText = 'Tiến hành thanh toán';
+                        return;
+                    }
+
+                    console.log('PayPal create-order response:', res.status, data);
+                    if (res.ok && data && data.approvalUrl) {
                         console.log('Redirecting to PayPal:', data.approvalUrl);
                         window.location.href = data.approvalUrl; // Chuyển hướng sang PayPal
                     } else {
-                        alert('Không tạo được đơn PayPal!');
+                        const serverMessage = data?.error || data?.message || 'Không tạo được đơn PayPal!';
+                        alert(serverMessage);
                         btnCheckout.disabled = false;
                         btnCheckout.innerText = 'Tiến hành thanh toán';
                     }
@@ -628,8 +647,98 @@ document.addEventListener('DOMContentLoaded', function () {
                     btnCheckout.disabled = false;
                     btnCheckout.innerText = 'Tiến hành thanh toán';
                 }
+            } else if (radioCrypto && radioCrypto.checked) {
+                e.preventDefault();
+                btnCheckout.disabled = true;
+                btnCheckout.innerText = 'Đang kết nối MetaMask...';
+                
+                const formData = new FormData(form);
+                try {
+                    console.log('=== CRYPTO PAYMENT FLOW START ===');
+                    
+                    // Lấy danh sách id chi tiết cart đã chọn
+                    const listIdInputs = form.querySelectorAll('input[name^="ListIdDetailCartPay"][name$="[id]"]');
+                    const listVariantInputs = form.querySelectorAll('input[name^="ListIdDetailCartPay"][name$="[productVariantId]"]');
+                    const cartItems = Array.from(listIdInputs).map((input, index) => ({
+                        id: input.value,
+                        productVariantId: listVariantInputs[index].value
+                    }));
+                    console.log('Cart items:', cartItems);
+
+                    // Gọi API để lấy thông tin ví admin
+                    console.log('Fetching admin wallet from /api/crypto/admin-wallet...');
+                    const adminWalletRes = await fetch('/api/crypto/admin-wallet');
+                    console.log('Admin wallet response status:', adminWalletRes.status);
+                    
+                    if (!adminWalletRes.ok) {
+                        const errorText = await adminWalletRes.text();
+                        throw new Error(`Failed to fetch admin wallet (${adminWalletRes.status}): ${errorText}`);
+                    }
+                    
+                    const adminData = await adminWalletRes.json();
+                    console.log('Admin wallet data:', adminData);
+                    
+                    if (!adminData.adminWallet) {
+                        throw new Error('Không tìm thấy ví admin trong response!');
+                    }
+
+                    // Lấy giá tiền điện tử hiện tại
+                    console.log('Fetching cryptocurrency price from /api/cryptocurrency/active-price...');
+                    const priceRes = await fetch('/api/cryptocurrency/active-price');
+                    console.log('Price response status:', priceRes.status);
+                    
+                    if (!priceRes.ok) {
+                        const errorText = await priceRes.text();
+                        throw new Error(`Failed to fetch price (${priceRes.status}): ${errorText}`);
+                    }
+                    
+                    const priceData = await priceRes.json();
+                    console.log('Price data:', priceData);
+                    
+                    const exchangeRate = priceData.priceVND || 8750;
+                    const totalVND = parseInt(formData.get('totalPrice'));
+                    const totalSGB = (totalVND / exchangeRate).toFixed(4);
+
+                    console.log('Calculated amounts:', {
+                        totalVND,
+                        exchangeRate,
+                        totalSGB
+                    });
+
+                    // Check if showCryptoPaymentModal exists
+                    if (typeof showCryptoPaymentModal !== 'function') {
+                        throw new Error('showCryptoPaymentModal function not found! Make sure crypto-payment.js is loaded.');
+                    }
+
+                    // Hiển thị modal thanh toán
+                    console.log('Calling showCryptoPaymentModal...');
+                    showCryptoPaymentModal({
+                        adminWallet: adminData.adminWallet,
+                        amount: totalSGB,
+                        vndAmount: totalVND,
+                        receiverName: formData.get('receiverName'),
+                        receiverPhone: formData.get('receiverPhone'),
+                        receiverAddress: formData.get('receiverAddress'),
+                        receiverEmail: formData.get('receiverEmail'),
+                        receiverNote: formData.get('receiverNote'),
+                        cartItems: cartItems
+                    });
+
+                    console.log('=== CRYPTO PAYMENT FLOW SUCCESS ===');
+                    btnCheckout.disabled = false;
+                    btnCheckout.innerText = 'Tiến hành thanh toán';
+                } catch (err) {
+                    console.error('=== CRYPTO PAYMENT ERROR ===');
+                    console.error('Error object:', err);
+                    console.error('Error message:', err.message);
+                    console.error('Error stack:', err.stack);
+                    
+                    alert(`Lỗi khi chuẩn bị thanh toán tiền ảo!\n\n${err.message}`);
+                    btnCheckout.disabled = false;
+                    btnCheckout.innerText = 'Tiến hành thanh toán';
+                }
             }
-            // Nếu không phải PayPal thì để form submit như cũ
+            // Nếu không phải PayPal hoặc Crypto thì để form submit như cũ
         });
     }
 });

@@ -8,7 +8,9 @@ const PostAddProductToCartAPI = async (req: Request, res: Response)=> {
     const user = req?.user as UserRole;
     const newSum = (req?.user?.quantityCart) ? ((req.user.quantityCart) + (quantity ? Number(quantity) : 1)) : (quantity ? Number(quantity) : 1);
     if (user) {
-        await AddProductToCart(user, quantity ? Number(quantity) : 1, Number(productId), Number(productVariantId)); // Assuming quantity is 1 for simplicity
+        // Normalize productVariantId: allow undefined when not provided
+        const pvId = (productVariantId === undefined || productVariantId === null || productVariantId === '') ? undefined : Number(productVariantId);
+        await AddProductToCart(user, quantity ? Number(quantity) : 1, Number(productId), pvId); // pvId may be undefined
         res.status(200).json({ message: 'Thêm sản phẩm vào giỏ hàng thành công', data: { quantityCart: newSum } });
     } else {
         res.status(401).json({ message: 'Chưa đăng nhập' , data: { quantityCart: 0 } });
