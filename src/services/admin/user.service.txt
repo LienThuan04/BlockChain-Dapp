@@ -1,0 +1,82 @@
+import GetConnection from "config/db";
+import e from "express";
+
+const handleCreateUser = async (name: string, email: string, address: string) => {
+    const connection = await GetConnection();
+
+    // console.log(">>> check insert a new user:", name, email, address);
+
+    try {
+        const sql = 'INSERT INTO `users`(`name`, `email`, `address`) VALUES (?, ?, ?)';
+        const values = [name, email, address];
+
+        const [result, fields] = await connection.execute(sql, values);
+        return result;
+
+    } catch (err) {
+        console.log(err);
+        return [];
+    }
+
+};
+
+const PostDeleteUser = async (id: string) => {
+    const connection = await GetConnection();
+    try {
+        const sql = 'DELETE FROM `users` WHERE `id` = ? ';
+        const values = [id];
+
+        const [result, fields] = await connection.execute(sql, values);
+
+        return true;
+    } catch (err) {
+        console.log(err);
+        return false
+    }
+};
+
+const GetAllUser = async () => {
+    const connection = await GetConnection();
+    try {
+        const [results, fields] = await connection.query(
+            'SELECT * FROM `Users`'
+        );
+        return results;
+
+    } catch (err) {
+        console.log(err);
+        return [];
+    }
+
+};
+
+const GetUserById = async (id: number) => {
+    const connection = await GetConnection();
+    try {
+        const sql = 'SELECT * FROM `users` WHERE `id` = ? ';
+        const values = [id];
+        const [rows, fields] = await connection.execute(sql, values);
+
+        return rows;
+    } catch (err) {
+        console.log(err);
+        return ["error with SELECT GetUserById !!!"]
+    }
+};
+
+const PostUpdateUserbyid = async (id: number, name: string, email: string, address: string) => {
+    const connection = await GetConnection();
+    try {
+        const sql = 'UPDATE `users` SET `name` = ? , `email`= ? , `address` = ? WHERE `id` = ? LIMIT 1';
+        const values = [name, email, address, id];
+
+        const [result, fields] = await connection.execute(sql, values);
+
+        return true;
+    } catch (err) {
+        console.log(err);
+        return false;
+    }
+
+}
+export { handleCreateUser, GetAllUser, PostDeleteUser, GetUserById, PostUpdateUserbyid };

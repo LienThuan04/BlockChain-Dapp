@@ -1,0 +1,499 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    display: flex;
+    justify-self: center;
+    align-items: center;
+    min-height: 100vh;
+    background: url('/client/img/BG_Login.jpg') no-repeat;
+    background-size: cover;
+    background-position: center;
+}
+
+header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 20px 100px;
+    background: transparent;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 99;
+}
+
+.logo {
+    color: #fff;
+    font-size: 200%;
+}
+
+.navigation a {
+    position: relative;
+    font-size: 1.1em;
+    color: #fff;
+    text-decoration-line: none;
+    font-weight: 500;
+    margin-left: 25px;
+}
+
+.navigation a::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -5px;
+    width: 100%;
+    height: 2px;
+    background: #fff;
+    transform-origin: right;
+    transition: 5;
+    transform: scaleX(0);
+    transition: transform .5s;
+}
+
+.navigation a:hover:after {
+    transform-origin: left;
+    transform: scaleX(1);
+}
+
+.navigation .btnLogin-popup {
+    width: 130px;
+    height: 50px;
+    background: transparent;
+    border: 2px solid #fff;
+    outline: none;
+    border-radius: 10px;
+    font-size: 1.1em;
+    color: #fff;
+    font-weight: 500;
+    margin-left: 40px;
+    transition: .5s;
+
+}
+
+.navigation .btnLogin-popup:hover {
+    background: #fff;
+    color: #000;
+    transition: 0.5s;
+}
+
+.wrapper {
+    position: relative;
+    width: 400px;
+    height: 440px;
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 5);
+    border-radius: 20px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 0 20px rgba(0, 0, 0, .5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    /*ẩn di nội dung bên ngoài khung có giới hạn width 400px height 440px; */
+    transition: height 0.6s ease;
+    transform: scale(0);
+    transition: transform .5s ease, height .2s ease;
+}
+
+.wrapper.active-popup {
+    transform: scale(1);
+}
+
+.wrapper.active {
+    height: 520px;
+}
+
+.wrapper .form-box.Login {
+    width: 100%;
+    padding: 40px;
+    /* display: none; */
+    transition: transform .18s ease;
+    transform: translateX(0);
+
+
+}
+
+.wrapper.active .form-box.Login {
+    transition: none;
+    transform: translateX(-400px);
+    display: block;
+}
+
+.wrapper .form-box.Register {
+    position: absolute;
+    transition: none;
+    width: 100%;
+    padding: 40px;
+    transform: translateX(400px);
+}
+
+.wrapper.active .form-box.Register {
+    position: absolute;
+    width: 100%;
+    padding: 40px;
+    transition: transform .18s ease;
+    transform: translateX(0);
+}
+
+.wrapper .icon-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 35px;
+    height: 35px;
+    background: #000000;
+    display: flex;
+    color: #fff;
+    justify-content: center;
+    font-size: 2em;
+    align-items: center;
+    border-bottom-left-radius: 20px;
+    border-top-right-radius: 20px;
+    cursor: pointer;
+    z-index: 1;
+}
+
+
+.wrapper .form-box.Login h2 {
+    font-size: 2em;
+    color: #000000;
+    text-align: center;
+}
+
+.wrapper .form-box.Register h2 {
+    font-size: 2em;
+    color: #000000;
+    text-align: center;
+}
+
+.input-box {
+    position: relative;
+    width: 100%;
+    height: 45px;
+    border-bottom: 2px solid #000000;
+    margin: 30px 0;
+}
+
+.input-box label {
+    position: absolute;
+    top: 50%;
+    left: 5px;
+    transform: translateY(-50%);
+    font-size: 1em;
+    color: #000000;
+    font-weight: 500;
+    pointer-events: none;
+    transition: .5s;
+
+}
+
+.input-box input:focus~label,
+.input-box input:valid~label {
+    top: -5px;
+    /* left: 5px;
+    color: #162938;
+    font-size: 0.8em; */
+}
+
+.input-box input {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 1em;
+    color: #000000;
+    font-weight: 600;
+    padding: 0 35px 0 5px;
+
+}
+
+.input-box .icon {
+    position: absolute;
+    right: 8px;
+    font-size: 1.2em;
+    color: #000000;
+    line-height: 57px;
+
+}
+
+
+
+.remember-forgot {
+    font-size: .9em;
+    color: #000000;
+    font-weight: 500;
+    margin: -15px 0 15px;
+    display: flex;
+    justify-content: space-between;
+
+}
+
+.terms-conditions {
+    font-size: .9em;
+    color: #000000;
+    font-weight: 500;
+    margin: -15px 0 15px;
+    display: flex;
+    justify-content: flex-start;
+
+}
+
+
+.remember-forgot label input {
+    accent-color: rgb(144, 198, 242);
+    margin: 3px;
+}
+
+.terms-conditions label input {
+    accent-color: rgb(144, 198, 242);
+    margin: 3px;
+
+}
+
+.remember-forgot a {
+    color: rgb(144, 198, 242);
+    text-decoration: none;
+}
+
+.remember-forgot a:hover {
+    text-decoration: underline;
+}
+
+.btn {
+    width: 100%;
+    height: 45px;
+    background: rgb(0, 0, 0);
+    border: none;
+    outline: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 1em;
+    font-weight: 500;
+    cursor: pointer;
+    /* margin: 20px 0; */
+    transition: .5s;
+}
+
+.btn:hover {
+    background: rgb(144, 198, 242);
+    color: #000000;
+    transition: .5s;
+}
+
+.login-register {
+    font-size: .9em;
+    color: #000000;
+    text-align: center;
+    font-weight: 500;
+    margin: 25px 0 10px;
+}
+
+.login-register a {
+    color: rgb(144, 198, 242);
+    text-decoration: none;
+
+}
+
+.login-register p a:hover {
+    text-decoration: underline;
+}
+
+
+/* Thông báo lỗi */
+.alert-container {
+    position: fixed;
+    top: 80px;              /* Ngay dưới header */
+    right: 20px;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.alert {
+    min-width: 250px;
+    max-width: 350px;
+    border-radius: 8px;
+    padding: 12px 16px;
+    background-color: rgba(220, 53, 69, 0.4); /* đỏ trong mờ */
+    color: #fff;            
+    font-weight: 500;
+    border: 1px solid rgba(255,255,255,0.3);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    animation: slideIn 0.4s ease-out;
+    cursor: pointer; /* 👈 hiện bàn tay khi hover */
+}
+
+.close-btn {
+    position: absolute;
+    right: 10px;
+    top: 8px;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+    opacity: 0.8;
+}
+
+.close-btn:hover {
+    opacity: 1;
+}
+
+.alert:hover {
+    opacity: 1;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(120%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 0.95;
+    }
+}
+
+
+
+
+
+/* Thêm padding-top cho body để tránh header che main */
+body {
+    background-attachment: fixed;
+    padding-top: 80px;
+    /* Thêm dòng này, điều chỉnh giá trị nếu header cao hơn/thấp hơn */
+}
+
+/* Tablet: <= 900px */
+@media (max-width: 900px) {
+    header {
+        padding: 16px 24px;
+    }
+
+    .logo {
+        font-size: 1.5em;
+    }
+
+    .navigation {
+        gap: 15px;
+        flex-direction: column;
+        align-items: flex-end;
+        width: 100%;
+    }
+
+    .navigation a {
+        width: 100%;
+        margin: 0;
+        padding: 12px 18px;
+    }
+
+    .navigation .btnLogin-popup {
+        min-width: unset;
+    }
+
+    .wrapper {
+        width: 95vw;
+        max-width: 400px;
+        min-height: 420px;
+        padding: 0;
+    }
+
+    body {
+        padding-top: 70px;
+        /* Giảm padding cho tablet nếu header thấp hơn */
+    }
+}
+
+/* Mobile: <= 600px */
+@media (max-width: 600px) {
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 10px 4vw;
+        gap: 8px;
+        background: rgb(144, 198, 242);
+    }
+
+    .logo {
+        font-size: 1.1em;
+        margin-bottom: 6px;
+    }
+
+    .navigation {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        width: 100%;
+        margin-top: 4px;
+    }
+
+    .navigation a {
+        margin: 0;
+        width: 100%;
+        text-align: left;
+        padding: 0px 0 0px 10px;
+        border-radius: 6px;
+        box-sizing: border-box;
+        font-size: 1em;
+    }
+
+    .navigation .btnLogin-popup {
+        min-width: unset;
+        width: 100%;
+        padding: 10px 0 10px 10px;
+        margin: 18px 0 0 0;
+        /* Đưa nút xuống dưới */
+    }
+
+    .wrapper {
+        width: 90vw;
+        max-width: 99vw;
+        min-width: unset;
+        min-height: 380px;
+        border-radius: 20px;
+        padding: 0;
+        left: 0;
+        right: 0;
+        margin: 0 auto;
+    }
+
+    .form-box.Login,
+    .form-box.Register {
+        padding: 16px 4vw;
+    }
+
+    .input-box {
+        margin: 14px 0;
+    }
+
+    .btn {
+        height: 38px;
+        font-size: 0.97em;
+    }
+
+    .icon-close {
+        width: 32px;
+        height: 32px;
+        font-size: 1.3em;
+    }
+
+    body {
+        padding-top: 160px;
+        /* Giảm padding cho mobile nếu header thấp hơn */
+    }
+}

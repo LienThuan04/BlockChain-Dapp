@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="LianHarman - Dự án laptopshop" />
+    <meta name="author" content="LianHarman" />
+    <title>Create Product - LianHarman</title>
+    <link rel="icon" type="image/svg+xml" href="/im/Logo-Admin.svg">
+    <link href="/admin/css/styles.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(() => {
+            const imageFile = $("#imageFile");
+            imageFile.change(function (e) {
+                const imgURL = URL.createObjectURL(e.target.files[0]);
+                $("#imageFilePreview").attr("src", imgURL);
+                $("#imageFilePreview").css({ "display": "block" });
+            });
+        });
+    </script>
+</head>
+
+<body class="sb-nav-fixed">
+    <!-- header -->
+    <%- include('../layout/header.ejs') -%>
+
+        <!-- main content -->
+        <div id="layoutSidenav">
+            <!-- sidenav -->
+            <%- include('../layout/sidenav.ejs') -%>
+                <div id="layoutSidenav_content">
+                    <main>
+                        <div class="container-fluid px-4">
+                            <div class="d-flex justify-content-between align-items-center mt-4 mb-1">
+                                <div class="d-flex flex-column w-100">
+                                    <h1 class="fw-bold text-primary mb-1"><i class="fa-solid fa-plus"></i> Create Product</h1>
+                                    <ol class="breadcrumb bg-light rounded shadow-sm px-3 py-2 mt-2" style="cursor: pointer;">
+                                        <li class="breadcrumb-item"><a href="/admin" class="text-decoration-none"><i class="fas fa-home me-1"></i> Dashboard</a></li>
+                                        <li class="breadcrumb-item"><a href="/admin/product" class="text-decoration-none">Products</a></li>
+                                        <li class="breadcrumb-item active">Create Product</li>
+                                    </ol>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-lg-7 col-md-9">
+                                    <div class="card shadow border-0">
+                                        <div class="card-header bg-success text-white">
+                                            <h5 class="mb-0"><i class="fa-solid fa-plus"></i> New Product</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <% errors.forEach(function (error) { %>
+                                                <div class="alert alert-danger mb-3">
+                                                    <%= error %>
+                                                </div>
+                                            <% }) %>
+                                                <form action="/admin/create-product" method="post" class="row g-3" enctype="multipart/form-data" onsubmit="return handleCustomSelects();">
+                                                <div class="col-12 mb-2">
+                                                    <label for="exampleFormControlInput1" class="form-label">Product Name</label>
+                                                    <input type="text" class="form-control" id="exampleFormControlInput1" placeholder="Product Name" name="name" value="<%= oldData.name %>" required>
+                                                </div>
+                                                <div class="col-md-6 mb-2">
+                                                    <label for="exampleFormControlInput2" class="form-label">Price</label>
+                                                    <input type="number" class="form-control" id="exampleFormControlInput2" placeholder="Price" name="price" value="<%= oldData.price %>" max="2147483640" required>
+                                                </div>
+                                                <div class="col-md-6 mb-2">
+                                                    <label for="Quantity" class="form-label">Total Quantity (auto-calculated from variants)</label>
+                                                    <input type="number" class="form-control" id="Quantity" placeholder="Total Quantity" name="quantity" value="<%= oldData.quantity %>" max="2147483640" readonly required>
+                                                </div>
+                                                <div class="col-md-12 mb-2">
+                                                    <label for="status" class="form-label">Product Status</label>
+                                                    <select class="form-select" id="status" name="status" required>
+                                                        <option value="ACTIVE" <%= oldData.status === 'ACTIVE' ? 'selected' : '' %>>Active/Visible</option>
+                                                        <option value="INACTIVE" <%= oldData.status === 'INACTIVE' ? 'selected' : '' %>>Inactive/Temporarily Hidden</option>
+                                                        <option value="OUT_OF_STOCK" <%= oldData.status === 'OUT_OF_STOCK' ? 'selected' : '' %>>Out of Stock</option>
+                                                        <option value="DISCONTINUED" <%= oldData.status === 'DISCONTINUED' ? 'selected' : '' %>>Discontinued</option>
+                                                        <option value="DRAFT" <%= !oldData.status || oldData.status === 'DRAFT' ? 'selected' : '' %>>Draft/Not Published</option>
+                                                        <option value="PENDING" <%= oldData.status === 'PENDING' ? 'selected' : '' %>>Pending Approval</option>
+                                                        <option value="DELETED" <%= oldData.status === 'DELETED' ? 'selected' : '' %>>Deleted/Hidden</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-12 mb-2">
+                                                    <label for="ShortDesc" class="form-label">Short Description</label>
+                                                    <input type="text" class="form-control" id="ShortDesc" placeholder="Short Description" name="shortDesc" value="<%= oldData.shortDesc %>">
+                                                </div>
+                                                <div class="col-12 mb-3">
+                                                    <label for="detailDesc" class="form-label">Detail Description</label>
+                                                    <textarea name="detailDesc" class="form-control" id="detailDesc" rows="2"><%= oldData.detailDesc %></textarea required>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Factory</label>
+                                                    <select name="factory" class="form-select" id="factorySelect" required>
+                                                        <% if (typeof factories !== 'undefined' && factories && factories.length > 0) { %>
+                                                            <% factories.forEach(function(fac) { %>
+                                                                <option value="<%= fac.id %>" ><%= fac.name %></option>
+                                                            <% }) %>
+                                                        <% } %>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Target</label>
+                                                    <select name="target" class="form-select" id="targetSelect" required>
+                                                        <% if (typeof targets !== 'undefined' && targets && targets.length > 0) { %>
+                                                            <% targets.forEach(function(tar) { %>
+                                                                <option value="<%= tar.id %>" ><%= tar.name %></option>
+                                                            <% }) %>
+                                                        <% } %>
+                                                    </select>
+                                                </div>
+                                                <div class="col-12 mb-3">
+                                                    <label class="form-label">Product Variants (Chip, Memory, Color, Extra Price, Quantity)</label>
+                                                    <div id="variants-list"></div>
+                                                    <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addVariantRow()">+ Add Variant</button>
+                                                </div>
+                                                <div class="col-12 mb-3">
+                                                    <label for="imageFile" class="form-label"><i class="fa-solid fa-image"></i> Image thumbnail</label>
+                                                    <input class="form-control w-50" type="file" accept="image/*" name="image" id="imageFile" required>
+                                                </div>
+                                                <div class="col-12 mb-3 text-center">
+                                                    <img style="max-width: 100%; max-height: 350px; display: none; border-radius: 10px;" alt="image preview" id="imageFilePreview"/>
+                                                </div>
+                                                <div>
+                                                    <label for="multiImageInput" class="btn btn-outline-primary"><i class="fa-solid fa-images"></i> Choose product images</label>
+                                                    <input class="form-control" type="file" accept="image/*" name="images" id="multiImageInput" style="display: none;" multiple >
+                                                    <div id="multiImagePreview" class="d-flex flex-wrap mt-2">
+                                                        <!-- Image previews will be shown here -->
+                                                    </div>
+                                                </div>
+                                                <div class="col-12 mb-3 text-end">
+                                                    <button class="btn btn-success px-4 mt-3" type="submit"><i class="fa-solid fa-plus"></i> Create Product</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                    <!-- footer -->
+                    <%- include('../layout/footer.ejs') -%>
+                </div>
+        </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.ckeditor.com/ckeditor5/40.2.0/classic/ckeditor.js"></script>
+    <script>
+    ClassicEditor
+    .create(document.querySelector('#detailDesc'))
+    .catch(error => { console.error(error); });
+    </script>
+    <script src="/admin/js/scripts.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+        initMultiImageUpload('multiImageInput', 'multiImagePreview');
+        });
+    </script>
+</body>
+
+</html>

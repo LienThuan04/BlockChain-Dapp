@@ -1,0 +1,34 @@
+<nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark shadow-sm" style="background: linear-gradient(90deg,#232526,#414345 60%,#007bff 100%);">
+    <!-- Navbar Brand-->
+    <a class="navbar-brand ps-3 fw-bold" href="/admin" style="font-size:1.6rem;background: linear-gradient(90deg,#00c6ff,#007bff,#43e97b 60%,#38f9d7);-webkit-background-clip: text;-webkit-text-fill-color: transparent;background-clip: text;">Page Admin</a>
+    <!-- Sidebar Toggle-->
+    <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0 text-white" id="sidebarToggle" href="#!"><i class="fas fa-bars"></i></button>
+    <!-- Navbar Search-->
+    <form class="d-none d-md-inline-block form-inline ms-auto me-0 my-2 my-md-0">
+        <span class="fw-semibold text-white me-3" style="font-size:1.1rem;"><i class="fas fa-crown text-warning me-1"></i>Welcome, <span style="color:#43e97b">LianHarman</span></span>
+    </form>
+    <!-- Navbar-->
+    <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4 align-items-center">
+        <!-- <li class="nav-item me-3">
+            <a class="nav-link position-relative" href="#" title="Notifications">
+                <i class="fas fa-bell fa-lg"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.7em;">3</span>
+            </a>
+        </li> -->
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle d-flex align-items-center" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <img src="/images/avatars/<%= user?.avatar ? user?.avatar : 'default-avatar.jpg' %>" alt="avatar" class="rounded-circle me-2" style="width:32px;height:32px;object-fit:cover;border:2px solid #fff;">
+                <span class="d-none d-lg-inline text-white"><%= user.name %></span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                <li><a class="dropdown-item" href="/My-Account"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                    <form method="post" action="/logout">
+                        <button class="dropdown-item"><i class="fas fa-sign-out-alt me-2"></i>Logout</button>
+                    </form>
+                </li>
+            </ul>
+        </li>
+    </ul>
+</nav>

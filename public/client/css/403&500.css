@@ -1,0 +1,101 @@
+html, body {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #13B0FF !important;
+  min-height: 100vh;
+  font-family: 'Poppins', Arial, sans-serif;
+  color: #fff;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+#layoutError {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#layoutError_content {
+  flex: 1 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Không ép height ở đây */
+  min-height: 0;
+}
+
+.text-center.mt-4 {
+  padding: 0;
+  margin: 0;
+}
+
+.display-1 {
+  font-size: 6rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.10);
+}
+
+.lead {
+  font-size: 1.5rem;
+  color: #fff;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.text-center.mt-4 p {
+  color: #fff;
+  margin-bottom: 18px;
+}
+
+.text-center.mt-4 a {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 10px 28px;
+  background: #FFB524 !important;
+  color: #ffffff !important;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-decoration: none;
+  box-shadow: none;
+  transition: background 0.2s;
+  border: none;
+}
+.text-center.mt-4 a:hover {
+  background: #e6a900 !important;
+  color: #222 !important;
+}
+
+#layoutError_footer {
+  flex-shrink: 0;
+  background: transparent;
+}
+
+footer.py-4.bg-light.mt-auto {
+  background: transparent !important;
+  border-top: none;
+}
+
+footer .text-muted {
+  color: #fff !important;
+  font-weight: 500;
+}
+
+footer a {
+  color: #fff;
+  font-weight: 500;
+  text-decoration: underline;
+}
+footer a:hover {
+  color: #FFB524;
+}

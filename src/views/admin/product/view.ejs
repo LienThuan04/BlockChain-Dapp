@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="LianHarman - Dự án laptopshop" />
+    <meta name="author" content="LianHarman" />
+    <title>Product Detail - LianHarman</title>
+    <link rel="icon" type="image/svg+xml" href="/im/Logo-Admin.svg">
+    <link href="/admin/css/styles.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(() => {
+            const imageFile = $("#imageFile");
+            imageFile.change(function (e) {
+                const imgURL = URL.createObjectURL(e.target.files[0]);
+                $("#imageFilePreview").attr("src", imgURL);
+                $("#imageFilePreview").css({ "display": "block" });
+            });
+        });
+    </script>
+</head>
+
+<body class="sb-nav-fixed">
+    <!-- header -->
+    <%- include('../layout/header.ejs') -%>
+
+        <!-- main content -->
+        <div id="layoutSidenav">
+            <!-- sidenav -->
+            <%- include('../layout/sidenav.ejs') -%>
+                <div id="layoutSidenav_content">
+                    <main>
+                        <div class="container-fluid px-4">
+                            <div class="d-flex justify-content-between align-items-center mt-4 mb-1">
+                                <div class="d-flex flex-column w-100">
+                                    <h1 class="fw-bold text-primary mb-1"><i class="fa-solid fa-box"></i> Product Detail</h1>
+                                    <ol class="breadcrumb bg-light rounded shadow-sm px-3 py-2 mt-2" style="cursor: pointer;">
+                                        <li class="breadcrumb-item"><a href="/admin" class="text-decoration-none"><i class="fas fa-home me-1"></i> Dashboard</a></li>
+                                        <li class="breadcrumb-item"><a href="/admin/product" class="text-decoration-none">Products</a></li>
+                                        <li class="breadcrumb-item active">Product Detail</li>
+                                    </ol>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-lg-7 col-md-9">
+                                    <div class="card shadow border-0">
+                                        <div class="card-header bg-info text-white">
+                                            <h5 class="mb-0"><i class="fa-solid fa-box"></i> Edit Product</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <% errors.forEach(function (error) { %>
+                                                <div class="alert alert-danger mb-3">
+                                                    <%= error %>
+                                                </div>
+                                            <% }) %>
+                                            <form action="/admin/view_product/<%= product.id %>" method="post" class="row g-3" enctype="multipart/form-data">
+                                                <input type="hidden" value="<%= product.id %>" name="id" />
+                                                <div id="deletedImagesToSend" style="display:none;"></div>
+                                                <div class="col-12 mb-2">
+                                                    <label for="exampleFormControlInput1" class="form-label">Product Name</label>
+                                                    <input type="text" class="form-control" id="exampleFormControlInput1" placeholder="Product Name" name="name" value="<%= product.name %>" required>
+                                                </div>
+                                                <div class="col-md-6 mb-2">
+                                                    <label for="exampleFormControlInput2" class="form-label">Price</label>
+                                                    <input type="number" class="form-control" id="exampleFormControlInput2" placeholder="Price" name="price" value="<%= product.price %>" required>
+                                                </div>
+                                                <div class="col-md-6 mb-2">
+                                                    <label for="Quantity" class="form-label">Total Quantity (auto-calculated from variants)</label>
+                                                    <input type="number" class="form-control" id="Quantity" placeholder="Total Quantity" name="quantity" value="<%= product.quantity %>" required readonly style="background:#e9ecef;">
+                                                </div>
+                                                <div class="col-md-12 mb-2">
+                                                    <label for="status" class="form-label">Product Status</label>
+                                                    <select class="form-select" id="status" name="status" required>
+                                                        <option value="ACTIVE" <%= product.status === 'ACTIVE' ? 'selected' : '' %>>Active/Visible</option>
+                                                        <option value="INACTIVE" <%= product.status === 'INACTIVE' ? 'selected' : '' %>>Inactive/Temporarily Hidden</option>
+                                                        <option value="OUT_OF_STOCK" <%= product.status === 'OUT_OF_STOCK' ? 'selected' : '' %>>Out of Stock</option>
+                                                        <option value="DISCONTINUED" <%= product.status === 'DISCONTINUED' ? 'selected' : '' %>>Discontinued</option>
+                                                        <option value="DRAFT" <%= !product.status || product.status === 'DRAFT' ? 'selected' : '' %>>Draft/Not Published</option>
+                                                        <option value="PENDING" <%= product.status === 'PENDING' ? 'selected' : '' %>>Pending Approval</option>
+                                                        <option value="DELETED" <%= product.status === 'DELETED' ? 'selected' : '' %>>Deleted/Hidden</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-12 mb-2">
+                                                    <label for="ShortDesc" class="form-label">Short Description</label>
+                                                    <input type="text" class="form-control" id="ShortDesc" placeholder="Short Description" name="shortDesc" value="<%= product.shortDesc %>">
+                                                </div>
+                                                <div class="col-12 mb-3">
+                                                    <label for="detailDesc" class="form-label">Detail Description</label>
+                                                    <textarea name="detailDesc" class="form-control" id="detailDesc" rows="2" ><%= product.detailDesc %></textarea>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Factory</label>
+                                                    <select name="factory" class="form-select" id="factorySelect" required>
+                                                        <% if (typeof factories !== 'undefined' && factories && factories.length > 0) { %>
+                                                            <% factories.forEach(function(fac) { %>
+                                                                <option value="<%= fac.id %>" <%= product.factoryId == fac.id ? 'selected' : '' %>><%= fac.name %></option>
+                                                            <% }) %>
+                                                        <% } %>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Target</label>
+                                                    <select name="target" class="form-select" id="targetSelect" required>
+                                                        <% if (typeof targets !== 'undefined' && targets && targets.length > 0) { %>
+                                                            <% targets.forEach(function(tar) { %>
+                                                                <option value="<%= tar.id %>" <%= product.targetId == tar.id ? 'selected' : '' %>><%= tar.name %></option>
+                                                            <% }) %>
+                                                        <% } %>
+                                                    </select>
+                                                </div>
+                                                <div class="col-12 mb-3">
+                                                    <label class="form-label">Product Variants (Chip, Memory, Color, Extra Price, Quantity)</label>
+                                                    <!-- Hidden div to store deleted variant ids -->
+                                                    <div id="variantsToDelete" style="display:none;"></div>
+                                                    <div id="variants-list">
+                                                        <% if (product.productVariants && product.productVariants.length > 0) { %>
+                                                            <% product.productVariants.forEach(function(variant, idx) { %>
+                                                                <div class="row g-2 align-items-end variant-row mb-2" data-idx="<%= idx %>" data-variant-id="<%= variant.id %>">
+                                                                    <input type="hidden" name="variants[<%= idx %>][id]" value="<%= variant.id %>">
+                                                                    <div class="col-md-2">
+                                                                        <input type="text" class="form-control" name="variants[<%= idx %>][cpu]" placeholder="Chip" value="<%= variant.cpu %>" required>
+                                                                    </div>
+                                                                    <div class="col-md-2">
+                                                                        <select class="form-select" name="variants[<%= idx %>][memory]" required>
+                                                                            <% 
+                                                                                const memoryOptions = [
+                                                                                    { value: '8GB/512GB', label: '8GB/512GB' },
+                                                                                    { value: '16GB/512GB', label: '16GB/512GB' },
+                                                                                    { value: '32GB/1024GB', label: '32GB/1024GB' },
+                                                                                    { value: '32GB/2048GB', label: '32GB/2048GB' }
+                                                                                ];
+                                                                                let found = false;
+                                                                                memoryOptions.forEach(function(opt) {
+                                                                                    if (String(variant.memory) === opt.value) found = true;
+                                                                                });
+                                                                                if (!found) { %>
+                                                                                    <option value="<%= variant.memory %>" selected><%= variant.memory %></option>
+                                                                            <% } %>
+                                                                            <% memoryOptions.forEach(function(opt) { %>
+                                                                                <option value="<%= opt.value %>" <%= String(variant.memory) === opt.value ? 'selected' : '' %>><%= opt.label %></option>
+                                                                            <% }); %>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="col-md-2">
+                                                                        <input type="text" class="form-control" name="variants[<%= idx %>][color]" placeholder="Color" value="<%= variant.color %>">
+                                                                    </div>
+                                                                    <div class="col-md-2" style="min-width: 25%">
+                                                                        <input type="number" class="form-control" name="variants[<%= idx %>][priceMore]" placeholder="Extra Price" value="<%= variant.priceMore %>" min="0">
+                                                                    </div>
+                                                                    <div class="col-md-2">
+                                                                        <input type="number" class="form-control variant-qty" name="variants[<%= idx %>][quantity]" placeholder="Quantity" value="<%= variant.quantity %>" min="0" required>
+                                                                    </div>
+                                                                    <div class="col-md-2">
+                                                                        <% if (idx !== 0) { %>
+                                                                            <button type="button" class="btn btn-danger btn-sm" onclick="removeVariantRow(this)">Delete</button>
+                                                                        <% } %>
+                                                                    </div>
+                                                                </div>
+                                                            <% }) %>
+                                                        <% } %>
+                                                    </div>
+                                                    <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addVariantRow()">+ Add Variant</button>
+                                                </div>
+                                                <div class="col-12 mb-3">
+                                                    <label for="imageFile" class="btn btn-outline-primary"><i class="fa-solid fa-image"></i> Image</label>
+                                                    <input class="form-control" type="file" accept="image/*" name="image" id="imageFile" style="display: none;">
+                                                </div>
+                                                <div class="col-12 mb-3 text-center">
+                                                    <% if (product.image) { %>
+                                                        <img id="imageFilePreview" src="/images/products/<%= product.image %>" style="max-width: 100%; max-height: 350px; display: block; border-radius: 10px;" />
+                                                    <% } else { %>
+                                                        <img id="imageFilePreview" style="display: none; max-width: 100%; max-height: 350px; border-radius: 10px;" />
+                                                    <% } %>
+                                                </div>
+                                                <div class="mb-3">                                                    
+                                                    <!-- Input file cho ảnh mới -->
+                                                    <label for="newProductImages" class="btn btn-outline-primary mt-2">Add New Images</label>
+                                                    <input class="form-control" type="file" accept="image/*" name="images" id="newProductImages" multiple style="display: none;">
+                                                    <label class="form-label mx-4">Gallery Images</label>
+                                                    <div id="productImagesGallery" class="d-flex flex-wrap mx-2">
+                                                        <% if (product.productImages && product.productImages.length > 0) { %>
+                                                            <% product.productImages.forEach(function(img, idx) { %>
+                                                                <div class="position-relative m-2" style="width:120px;">
+                                                                    <img src="<%= img.urlImage.startsWith('/') ? img.urlImage : '/images/products/ImagesProductMore/' + img.urlImage %>" 
+                                                                         style="width:100%;height:120px;object-fit:cover;border-radius:8px;">
+                                                                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0"
+                                                                            style="width:30px;height:30px;border-radius:50%;"
+                                                                            data-img-id="<%= img.id %>">&times;</button>
+                                                                </div>
+                                                            <% }) %>
+                                                        <% } %>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12 mb-3 text-end">
+                                                    <button class="btn btn-info px-4 mt-3" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                    <!-- footer -->
+                    <%- include('../layout/footer.ejs') -%>
+                </div>
+        </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.ckeditor.com/ckeditor5/40.2.0/classic/ckeditor.js"></script>
+    <script>
+        ClassicEditor
+        .create(document.querySelector('#detailDesc'))
+        .catch(error => { console.error(error); });
+    </script>
+    <script src="/admin/js/scripts.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        initProductImageGallery('productImagesGallery', 'newProductImages', 'deletedImagesToSend');
+    });
+    </script>
+</body>
+
+</html>

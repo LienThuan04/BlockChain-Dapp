@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>
+        <%= product.name %> - laptopshop
+    </title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+    <link rel="icon" type="image/svg+xml" href="/im/Logo-Client.svg">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Raleway:wght@600;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="/client/lib/lightbox/css/lightbox.min.css" rel="stylesheet">
+    <link href="/client/lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="/client/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="/client/css/style.css" rel="stylesheet">
+
+    <!-- style star -->
+     <style>
+    .averageRating {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1.5rem;
+    }
+
+    .stars-outer {
+    position: relative;
+    display: inline-block;
+    }
+
+    .stars-outer i {
+    color: #ccc; /* sao rỗng */
+    }
+
+    .stars-inner {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;        /* sao vàng cao bằng icon */
+        overflow: hidden;    /* cắt bớt theo % */
+        white-space: nowrap;
+    }
+    .stars-inner i {
+        color: #13b0ff !important; /* màu xanh sáng */
+        filter: drop-shadow(0 0 2px #e0f6ff);
+    }
+
+    .rating-value {
+    font-size: 1rem;
+    color: #333;
+    }
+     </style>
+
+    <!-- Toast -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.css" integrity="sha512-wJgJNTBBkLit7ymC6vvzM1EcSWeM9mmOu+1USHaRBbHkm6W9EgM0HY27+UtUaprntaYQJF75rc8gjxllKs5OIQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+</head>
+
+<body>
+
+    <!-- Spinner Start -->
+    <div id="spinner"
+        class="show w-100 vh-100 bg-white position-fixed translate-middle top-50 start-50  d-flex align-items-center justify-content-center">
+        <div class="spinner-grow text-primary" role="status"></div>
+    </div>
+    <!-- Spinner End -->
+
+
+    <!-- Navbar start -->
+    <%- include('../layout/header.ejs') -%>
+        <!-- Navbar End -->
+        <div class="py-4"></div>
+
+        <!-- Single Product Start -->
+        <div class="container-fluid py-5 mt-5">
+            <div class="container py-5">
+
+                <div class="row g-4 mb-5">
+                    <ol class="breadcrumb mb-0" style="cursor: pointer;">
+                        <li class="breadcrumb-item"><a href="/">Home</a></li>
+                        <li class="breadcrumb-item active">Chi tiết sản phẩm</li>
+                    </ol>
+                    <div class="col-lg-8 col-xl-9">
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <div class="border rounded position-relative">
+                                    <!-- thẻ carousel -->
+                                    <div id="carouselExampleIndicators" class="carousel slide" data-bs-ride="carousel">
+                                        <div class="carousel-indicators mb-0">
+                                            <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+                                            <% if (product.productImages && product.productImages.length > 0) { %>
+                                                <% product.productImages.forEach((img, index) => { %>
+                                                    <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="<%= index + 1 %>" aria-label="Slide <%= index + 2 %>"></button>
+                                                <% }); %>
+                                            <% } %>
+                                        </div>
+                                        <div class="carousel-inner">
+                                            <div class="carousel-item active">
+                                                <img src="/images/products/<%= product.image %>" class="img-fluid rounded" alt="Image" style="width:100%;height:350px;object-fit:cover;">
+                                            </div>
+                                            <% if (product.productImages && product.productImages.length > 0) { %>
+                                                <% product.productImages.forEach((img) => { %>
+                                                    <div class="carousel-item">
+                                                        <img src="/images/products/ImagesProductMore/<%= img.urlImage %>" class="img-fluid rounded" alt="Image" style="width:100%;height:350px;object-fit:cover;">
+                                                    </div>
+                                                <% }); %>
+                                            <% } %>
+
+                                        </div>
+                                        <% if (product.productImages && product.productImages.length > 0) { %>
+
+                                            <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="prev">
+                                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                            <span class="visually-hidden">Previous</span>
+                                            </button>
+
+                                            <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide="next">
+                                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                            <span class="visually-hidden">Next</span>
+                                            </button>
+                                            <% } %>
+                                        </div>
+                                        
+                                    <% if (product.quantity===0 || product.status === 'OUT_OF_STOCK') { %>
+                                        <div
+                                            style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;">
+                                            <span
+                                                class="text-danger fw-bold bg-white bg-opacity-75 px-3 py-2 rounded"
+                                                style="font-size:1.2rem;">Đã hết hàng</span>
+                                        </div>
+                                    <% } %>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <% if (product.quantity===0 || product.status === 'OUT_OF_STOCK') { %>
+                                    <form>
+                                        <h4 class="fw-bold mb-3">
+                                            <%= product.name %>
+                                        </h4>
+                                        <p class="mb-3">Mô tả phần cứng: <%= product.shortDesc %>
+                                        </p>
+                                        <h5 class="fw-bold mb-3">
+                                            <%= product.price.toLocaleString('vi-VN') %> VND
+                                        </h5>
+                                        <div class="d-flex mb-4">
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                        </div>
+                                        <div class="input-group quantity mb-5" style="width: 100px;">
+                                            <div class="input-group-btn">
+                                                <button type="button"
+                                                    class="btn btn-sm btn-minus rounded-circle bg-light border"
+                                                    disabled>
+                                                    <i class="fa fa-minus"></i>
+                                                </button>
+                                            </div>
+                                            <input type="text" class="form-control form-control-sm text-center border-0"
+                                                value="0" min="0" max="0" name="quantity" disabled>
+                                            <div class="input-group-btn">
+                                                <button type="button"
+                                                    class="btn btn-sm btn-plus rounded-circle bg-light border" disabled>
+                                                    <i class="fa fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <button type="button"
+                                            class="btn border border-secondary rounded-pill px-4 py-2 mb-4 text-secondary"
+                                            disabled style="opacity:0.6;cursor:not-allowed;"><i
+                                                class="fa fa-shopping-bag me-2 text-secondary"></i> Thêm vào giỏ
+                                            hàng</button>
+                                    </form>
+                                    <% } else { %>
+                                        <!-- Form add to cart -->
+                                        <form action="/add-product-to-cart/<%= product.id %>" method="post">
+                                            <h4 class="fw-bold mb-3">
+                                                <%= product.name %>
+                                            </h4>
+                                            <p class="mb-3">Mô tả phần cứng: <%= product.shortDesc %>
+                                            </p>
+                                            <h5 class="fw-bold mb-3">
+                                                <span id="product-price-display" data-base-price="<%= product.price %>">
+                                                    <%= product.price.toLocaleString('vi-VN') %>
+                                                </span> VND
+                                            </h5>
+                                            <div class="averageRating">
+                                                <div class="stars-outer">
+                                                    <% let fillPercent = (!averageRating || averageRating === 0) ? 100 : (averageRating / 5 * 100); %>
+                                                    <div class="stars-inner" style="width: <%= fillPercent.toFixed(1) %>%;">
+                                                        <% for (let i = 0; i < 5; i++) { %>
+                                                            <i class="fa fa-star"></i>
+                                                        <% } %>
+                                                    </div>
+                                                    <% for (let i = 0; i < 5; i++) { %>
+                                                        <i class="fa fa-star"></i>
+                                                    <% } %>
+                                                </div>
+                                                <span class="rating-value"><%= (averageRating ? averageRating.toFixed(1) : '0.0') %>/5 <b>(<%= recommendedProducts.length %> đánh giá)</b></span>
+                                            </div>
+                                            <div class="container mb-3 mt-3 bg-light p-3 rounded-3">
+                                                <label class="fw-bold mb-2 fs-5">Chọn cấu hình:</label>
+                                                <div class="row g-3">
+                                                    <% product.productVariants.forEach(function(variant, idx) { %>
+                                                        <div
+                                                            class="col-md-6 variant-item<%= idx > 3 ? ' d-none' : '' %>">
+                                                            <div class="card h-100 shadow-sm rounded-3 variant-card"
+                                                                data-variant-radio="variant-<%= variant.id %>">
+                                                                <div class="card-body d-flex align-items-center">
+                                                                    <input class="variant-radio" type="radio"
+                                                                        name="productVariantId"
+                                                                        id="variant-<%= variant.id %>"
+                                                                        value="<%= variant.id %>"
+                                                                        data-quantity="<%= variant.quantity %>"
+                                                                        data-price-more="<%= variant.priceMore %>"
+                                                                    >
+                                                                    <label class="form-check-label w-100 mb-0"
+                                                                        for="variant-<%= variant.id %>"
+                                                                        style="cursor:pointer;">
+                                                                        <h6 class="mb-1">Bộ xử lý: <a class="text-danger"><%= variant.cpu %></a>
+                                                                        </h6>
+                                                                        <p class="mb-0 fw-bold">Bộ nhớ: <a
+                                                                                class="text-primary fw-bold">
+                                                                                <%= variant.memory %>
+                                                                            </a></p>
+                                                                        <p class="mb-0 fw-bold">Màu: <a
+                                                                                class="text-primary fw-bold">
+                                                                                <%= variant.color %>
+                                                                            </a></p>
+                                                                    </label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <% }) %>
+                                                            <% if (product.productVariants.length> 4) { %>
+                                                                <div class="col-12 mt-2">
+                                                                    <button id="show-more-variants" type="button"
+                                                                        class="btn btn-outline-primary btn-sm">Xem
+                                                                        thêm</button>
+                                                                </div>
+                                                                <% } %>
+                                                </div>
+                                            </div>
+
+
+                                            <div class="input-group quantity mb-3" style="width: 100px;">
+                                                <div class="input-group-btn">
+                                                    <button type="button"
+                                                        class="btn btn-sm btn-minus rounded-circle bg-light border" disabled>
+                                                        <i class="fa fa-minus"></i>
+                                                    </button>
+                                                </div>
+                                                <input type="text"
+                                                    class="form-control form-control-sm text-center border-0" value="1"
+                                                    min="1" max="<%= product.quantity %>" name="quantity" id="quantityDetail" disabled>
+                                                <div class="input-group-btn">
+                                                    <button type="button"
+                                                        class="btn btn-sm btn-plus rounded-circle bg-light border" disabled>
+                                                        <i class="fa fa-plus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <button type="submit" data-product-id="<%= product.id %>"
+                                                class="btn border border-secondary rounded-pill px-4 py-2 mb-4 text-primary btnAddToCartProductDetail" disabled><i
+                                                    class="fa fa-shopping-bag me-2 text-primary"></i> Thêm vào giỏ
+                                                hàng</button>
+                                        </form>
+                                        <% } %>
+                            </div>
+                            <div class="col-lg-12">
+                                <nav>
+                                    <div class="nav nav-tabs mb-3">
+                                        <button class="nav-link active border-white border-bottom-0" type="button"
+                                            role="tab" id="nav-about-tab" data-bs-toggle="tab"
+                                            data-bs-target="#nav-about" aria-controls="nav-about"
+                                            aria-selected="true">Mô tả</button>
+                                        <button class="nav-link border-white border-bottom-0" type="button" role="tab"
+                                            id="nav-mission-tab" data-bs-toggle="tab" data-bs-target="#nav-mission"
+                                            aria-controls="nav-mission" aria-selected="false">Đánh giá</button>
+                                    </div>
+                                </nav>
+                                <div class="tab-content mb-5">
+                                    <div class="tab-pane active" id="nav-about" role="tabpanel"
+                                        aria-labelledby="nav-about-tab">
+                                        <p><%- product.detailDesc %></p>
+                                        <div class="px-2">
+                                            <div class="row g-4">
+                                                <div class="col-12">
+                                                    <div
+                                                        class="row bg-light align-items-center text-center justify-content-center py-2">
+                                                        <div class="col-12 d-flex">
+                                                            <span class="fw-bold align-content-center"
+                                                                style="width: 40%;">Trọng lượng tối đa</span>
+                                                            <span class="align-content-center" style="width: 40%;">2.5
+                                                                kg</span>
+                                                            <span class="align-content-center" style="width: 40%;">Bao
+                                                                gồm cục sạc và laptop</span>
+                                                        </div>
+                                                    </div>
+                                                    <div
+                                                        class="row text-center align-items-center justify-content-center py-2 w-100">
+                                                        <div class="col-12 d-flex ">
+                                                            <span class="fw-bold align-content-center"
+                                                                style="width: 40%;">Hãng sản xuất</span>
+                                                            <span class="align-content-center" style="width: 40%;">
+                                                                <%= product.factory.name %>
+                                                            </span>
+                                                            <span class="align-content-center" style="width: 40%;"><%-
+                                                                    product.factory.description %></span>
+                                                        </div>
+                                                    </div>
+                                                    <div
+                                                        class="row bg-light text-center align-items-center justify-content-center py-2">
+                                                        <div class="col-12 d-flex ">
+                                                            <span class="fw-bold align-content-center"
+                                                                style="width: 40%;">Loại sản phẩm</span>
+                                                            <span class="align-content-center" style="width: 40%;">
+                                                                <%= product.target.name %>
+                                                            </span>
+                                                            <span class="align-content-center" style="width: 40%;"> <%-
+                                                                    product.target.description %></span>
+                                                        </div>
+                                                    </div>
+                                                    <div
+                                                        class="row text-center align-items-center justify-content-center py-2">
+                                                        <div class="col-12 d-flex ">
+                                                            <span class="fw-bold align-content-center"
+                                                                style="width: 40%;">Tồn kho</span>
+                                                            <span class="align-content-center" style="width: 40%;">
+                                                                <%= product.quantity %>
+                                                            </span>
+                                                            <span class="align-content-center" style="width: 40%;">Số
+                                                                lượng mà khách hàng có thể đặt</span>
+                                                        </div>
+                                                    </div>
+                                                    <div
+                                                        class="row bg-light text-center align-items-center justify-content-center py-2">
+                                                        <div class="col-12 d-flex ">
+                                                            <span class="fw-bold align-content-center"
+                                                                style="width: 40%;">Mã sản phẩm</span>
+                                                            <span class="align-content-center" style="width: 40%;">
+                                                                <%= product.id %>
+                                                            </span>
+                                                            <span class="align-content-center" style="width: 40%;">
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane" id="nav-mission" role="tabpanel"
+                                        aria-labelledby="nav-mission-tab">
+                                        <% if (recommendedProducts && recommendedProducts.length > 0) { %>
+                                        <div class="mb-4">
+                                            <h4 class="mb-4 fw-bold">Đánh giá từ khách hàng (<%= recommendedProducts.length %>)</h4>
+                                            <% recommendedProducts.forEach(item => { %>
+                                                <div class="d-flex mb-4">
+                                                    <img src="/images/avatars/<%= item.user.avatar ? item.user.avatar : 'default-avatar.jpg' %>" class="img-fluid rounded-circle p-3"
+                                                        style="width: 100px; height: 100px;" alt="">
+                                                    <div class="w-100">
+                                                        <p class="mb-2" style="font-size: 14px;"><%= new Date(item.createdAt).toLocaleString("vi-VN", { hour12: false }) %></p>
+                                                        <div class="d-flex justify-content-between" style="width: 100%;">
+                                                                <h5><%= item.user.fullName %></h5>
+                                                            <div class="d-flex mb-3">
+                                                                <% for (let i = 1; i <= 5; i++) { %>
+                                                                    <i class="fa fa-star <%= i <= item.rating ? 'text-primary' : 'text-dark' %>"></i>
+                                                                <% } %>
+                                                            </div>
+                                                        </div>
+                                                        <p><%= item.content %></p>
+                                                    </div>
+                                                </div>
+                                            <% }); %>
+                                        </div>
+                                        <% } else { %>
+                                        <div class="mb-4">
+                                            <h4 class="mb-4 fw-bold">Chưa có đánh giá nào</h4>
+                                            <p>Hãy là người đầu tiên đánh giá sản phẩm này!</p>
+                                        </div>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- <form action="#">
+                                <h4 class="mb-5 fw-bold">Leave a Reply</h4>
+                                <div class="row g-4">
+                                    <div class="col-lg-6">
+                                        <div class="border-bottom rounded">
+                                            <input type="text" class="form-control border-0 me-4" placeholder="Yur Name *">
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="border-bottom rounded">
+                                            <input type="email" class="form-control border-0" placeholder="Your Email *">
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-12">
+                                        <div class="border-bottom rounded my-4">
+                                            <textarea name="" id="" class="form-control border-0" cols="30" rows="8" placeholder="Your Review *" spellcheck="false"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-12">
+                                        <div class="d-flex justify-content-between py-3 mb-5">
+                                            <div class="d-flex align-items-center">
+                                                <p class="mb-0 me-3">Please rate:</p>
+                                                <div class="d-flex align-items-center" style="font-size: 12px;">
+                                                    <i class="fa fa-star text-muted"></i>
+                                                    <i class="fa fa-star"></i>
+                                                    <i class="fa fa-star"></i>
+                                                    <i class="fa fa-star"></i>
+                                                    <i class="fa fa-star"></i>
+                                                </div>
+                                            </div>
+                                            <a href="#" class="btn border border-secondary text-primary rounded-pill px-4 py-3"> Post Comment</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form> -->
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-xl-3">
+                        <div class="row g-4 fruite">
+                            <div class="col-lg-12">
+                                <!-- <div class="input-group w-100 mx-auto d-flex mb-4">
+                                    <input type="search" class="form-control p-3" placeholder="keywords" aria-describedby="search-icon-1">
+                                    <span id="search-icon-1" class="input-group-text p-3"><i class="fa fa-search"></i></span>
+                                </div> -->
+                                <div class="mb-4">
+                                    <h4>Hãng sản xuất</h4>
+                                    <ul class="list-unstyled fruite-categorie">
+                                        <% factories.forEach(factory => { %>
+                                            <li>
+                                                <div class="d-flex justify-content-between fruite-name">
+                                                    <a href="/products?factoryId=<%= factory.id %>&Page=0&sort=gia-khong-sap-xep&factory=<%= factory.name %>&target=&priceRange="><i class="fas fa-apple-alt me-2"></i><%= factory.name %></a>
+                                                    <span>(<%= quantityProductFactory.find(item => item.id === factory.id)?.quantityProduct || 0 %>)</span>
+                                                </div>
+                                            </li>
+                                        <% }) %>
+                                        <!-- <li>    
+                                            <div class="d-flex justify-content-between fruite-name">
+                                                <a href="#"><i class="fas fa-apple-alt me-2"></i>Pumpkin</a>
+                                                <span>(5)</span>
+                                            </div>
+                                        </li> -->
+                                    </ul>
+                                </div>
+                            </div>
+                            <!-- <div class="col-lg-12">
+                                <h4 class="mb-4">Featured products</h4>
+                                <div class="d-flex align-items-center justify-content-start">
+                                    <div class="rounded" style="width: 100px; height: 100px;">
+                                        <img src="/client/img/featur-1.jpg" class="img-fluid rounded" alt="Image">
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-2">Big Banana</h6>
+                                        <div class="d-flex mb-2">
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star"></i>
+                                        </div>
+                                        <div class="d-flex mb-2">
+                                            <h5 class="fw-bold me-2">2.99 $</h5>
+                                            <h5 class="text-danger text-decoration-line-through">4.11 $</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-start">
+                                    <div class="rounded" style="width: 100px; height: 100px;">
+                                        <img src="/client/img/featur-2.jpg" class="img-fluid rounded" alt="">
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-2">Big Banana</h6>
+                                        <div class="d-flex mb-2">
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star"></i>
+                                        </div>
+                                        <div class="d-flex mb-2">
+                                            <h5 class="fw-bold me-2">2.99 $</h5>
+                                            <h5 class="text-danger text-decoration-line-through">4.11 $</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-start">
+                                    <div class="rounded" style="width: 100px; height: 100px;">
+                                        <img src="/client/img/featur-3.jpg" class="img-fluid rounded" alt="">
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-2">Big Banana</h6>
+                                        <div class="d-flex mb-2">
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star"></i>
+                                        </div>
+                                        <div class="d-flex mb-2">
+                                            <h5 class="fw-bold me-2">2.99 $</h5>
+                                            <h5 class="text-danger text-decoration-line-through">4.11 $</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-start">
+                                    <div class="rounded me-4" style="width: 100px; height: 100px;">
+                                        <img src="/client/img/vegetable-item-4.jpg" class="img-fluid rounded" alt="">
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-2">Big Banana</h6>
+                                        <div class="d-flex mb-2">
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star"></i>
+                                        </div>
+                                        <div class="d-flex mb-2">
+                                            <h5 class="fw-bold me-2">2.99 $</h5>
+                                            <h5 class="text-danger text-decoration-line-through">4.11 $</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-start">
+                                    <div class="rounded me-4" style="width: 100px; height: 100px;">
+                                        <img src="/client/img/vegetable-item-5.jpg" class="img-fluid rounded" alt="">
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-2">Big Banana</h6>
+                                        <div class="d-flex mb-2">
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star"></i>
+                                        </div>
+                                        <div class="d-flex mb-2">
+                                            <h5 class="fw-bold me-2">2.99 $</h5>
+                                            <h5 class="text-danger text-decoration-line-through">4.11 $</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-start">
+                                    <div class="rounded me-4" style="width: 100px; height: 100px;">
+                                        <img src="/client/img/vegetable-item-6.jpg" class="img-fluid rounded" alt="">
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-2">Big Banana</h6>
+                                        <div class="d-flex mb-2">
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star text-secondary"></i>
+                                            <i class="fa fa-star"></i>
+                                        </div>
+                                        <div class="d-flex mb-2">
+                                            <h5 class="fw-bold me-2">2.99 $</h5>
+                                            <h5 class="text-danger text-decoration-line-through">4.11 $</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-center my-4">
+                                    <a href="#" class="btn border border-secondary px-4 py-3 rounded-pill text-primary w-100">Vew More</a>
+                                </div>
+                            </div>
+                            <div class="col-lg-12">
+                                <div class="position-relative">
+                                    <img src="/client/img/banner-fruits.jpg" class="img-fluid w-100 rounded" alt="">
+                                    <div class="position-absolute" style="top: 50%; right: 10px; transform: translateY(-50%);">
+                                        <h3 class="text-secondary fw-bold">Fresh <br> Fruits <br> Banner</h3>
+                                    </div>
+                                </div>
+                            </div> -->
+                        </div>
+                    </div>
+                </div>
+                <h1 class="fw-bold mb-0">Sản phẩm mới đề cử</h1>
+                <div class="vesitable">
+                    <div class="owl-carousel vegetable-carousel justify-content-center">
+                        <% if (newProducts && newProducts.length > 0) { %>
+                            <% newProducts.forEach(function(product) { %>
+                                <div class="border rounded position-relative vesitable-item">
+                                                            <div class="rounded position-relative fruite-item d-flex flex-column h-100 product-card"
+                                                                data-href="/product/<%= product.id %>"
+                                                                style="cursor:pointer;">
+                                                                <div class="fruite-img position-relative" style="overflow: hidden;">
+                                                                    <img src="/images/products/<%= product.image %>"
+                                                                        class="img-fluid w-100 rounded-top" alt="" style="object-fit: cover; height: 230px; max-height: 240px; width: 320px; min-width: 300px;"/>
+                                                                    <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 32%; pointer-events: none; 
+                                                                    background: linear-gradient(to top, rgba(0,0,0,0.22), rgba(0,0,0,0)); 
+                                                                    border-bottom-left-radius: inherit; border-bottom-right-radius: inherit;"></div>
+                                                                    <% if (product.quantity === 0 || product.status === 'OUT_OF_STOCK') { %>
+                                                                        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;">
+                                                                            <span class="text-danger fw-bold bg-white bg-opacity-75 px-3 py-2 rounded" style="font-size:1.2rem;">Đã hết hàng</span>
+                                                                        </div>
+                                                                    <% } %>
+                                                                </div>
+                                                                <div class="text-white bg-secondary px-3 py-1 rounded position-absolute"
+                                                                    style="top: 10px; left: 10px;"><%= product.target.name %></div>
+                                                                <div
+                                                                    class="p-4 border border-secondary border-top-0 rounded-bottom mt-auto">
+                                                                    <h4 style="font-size: 20px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-height: 48px;">
+                                                                        <%= product.name %>
+                                                                    </h4>
+                                                                    <p
+                                                                        style="font-size: 14px; text-align: center; width: 100%;">
+                                                                        <%= product.shortDesc %>
+                                                                    </p>
+                                                                    <div class="d-flex justify-content-center flex-lg-wrap">
+                                                                        <p class="fs-5">
+                                                                            <%= (product.price + (product.productVariants[0]?.priceMore || 0)).toLocaleString('vi-VN') %> VND
+                                                                        </p>
+                                                                    </div>
+                                                                    <!-- Nút thêm vào giỏ hàng -->
+                                                                    <% if (product.quantity === 0 || product.status === 'OUT_OF_STOCK') { %>
+                                                                        <div class="mx-auto mt-auto w-100 d-flex flex-column align-items-center justify-content-center">
+                                                                            <button type="button" class="btn border border-secondary rounded-pill px-3 text-secondary mt-auto add-to-cart-btn" disabled style="opacity:0.6;cursor:not-allowed;">
+                                                                                <i class="fa fa-shopping-bag me-2 text-secondary"></i>
+                                                                                Thêm vào giỏ hàng
+                                                                            </button>
+                                                                        </div>
+                                                                    <% } else { %>
+                                                                        <form action="/add-product-to-cart/<%= product.id %>" method="POST"
+                                                                            class="mx-auto mt-auto w-100 d-flex justify-content-center"
+                                                                            onClick="event.stopPropagation();">
+                                                                            <input type="hidden" name="productVariantId" value="<%= product.productVariants[0]?.id %>">
+                                                                            <button type="submit" data-product-id="<%= product.id %>"
+                                                                                class="btnAddToCartProduct btn border border-secondary rounded-pill px-3 text-primary mt-auto add-to-cart-btn">
+                                                                                <i
+                                                                                    class="fa fa-shopping-bag me-2 text-primary"></i>
+                                                                                Thêm vào giỏ hàng
+                                                                            </button>
+                                                                        </form>
+                                                                    <% } %>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                            <% }); %>
+                        <% } else { %>
+                            <p>Không có sản phẩm nào.</p>
+                        <% } %>
+                                                        
+                        <!-- <div class="border border-primary rounded position-relative vesitable-item">
+                            <div class="vesitable-img">
+                                <img src="/client/img/vegetable-item-6.jpg" class="img-fluid w-100 rounded-top" alt="">
+                            </div>
+                            <div class="text-white bg-primary px-3 py-1 rounded position-absolute"
+                                style="top: 10px; right: 10px;">Vegetable</div>
+                            <div class="p-4 pb-0 rounded-bottom">
+                                <h4>Parsely</h4>
+                                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit sed do eiusmod te incididunt
+                                </p>
+                                <div class="d-flex justify-content-between flex-lg-wrap">
+                                    <p class="text-dark fs-5 fw-bold">$4.99 / kg</p>
+                                    <a href="#"
+                                        class="btn border border-secondary rounded-pill px-3 py-1 mb-4 text-primary"><i
+                                            class="fa fa-shopping-bag me-2 text-primary"></i> Add to cart</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border border-primary rounded position-relative vesitable-item">
+                            <div class="vesitable-img">
+                                <img src="/client/img/vegetable-item-1.jpg" class="img-fluid w-100 rounded-top" alt="">
+                            </div>
+                            <div class="text-white bg-primary px-3 py-1 rounded position-absolute"
+                                style="top: 10px; right: 10px;">Vegetable</div>
+                            <div class="p-4 pb-0 rounded-bottom">
+                                <h4>Parsely</h4>
+                                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit sed do eiusmod te incididunt
+                                </p>
+                                <div class="d-flex justify-content-between flex-lg-wrap">
+                                    <p class="text-dark fs-5 fw-bold">$4.99 / kg</p>
+                                    <a href="#"
+                                        class="btn border border-secondary rounded-pill px-3 py-1 mb-4 text-primary"><i
+                                            class="fa fa-shopping-bag me-2 text-primary"></i> Add to cart</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border border-primary rounded position-relative vesitable-item">
+                            <div class="vesitable-img">
+                                <img src="/client/img/vegetable-item-3.png" class="img-fluid w-100 rounded-top bg-light"
+                                    alt="">
+                            </div>
+                            <div class="text-white bg-primary px-3 py-1 rounded position-absolute"
+                                style="top: 10px; right: 10px;">Vegetable</div>
+                            <div class="p-4 pb-0 rounded-bottom">
+                                <h4>Banana</h4>
+                                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit sed do eiusmod te incididunt
+                                </p>
+                                <div class="d-flex justify-content-between flex-lg-wrap">
+                                    <p class="text-dark fs-5 fw-bold">$7.99 / kg</p>
+                                    <a href="#"
+                                        class="btn border border-secondary rounded-pill px-3 py-1 mb-4 text-primary"><i
+                                            class="fa fa-shopping-bag me-2 text-primary"></i> Add to cart</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border border-primary rounded position-relative vesitable-item">
+                            <div class="vesitable-img">
+                                <img src="/client/img/vegetable-item-4.jpg" class="img-fluid w-100 rounded-top" alt="">
+                            </div>
+                            <div class="text-white bg-primary px-3 py-1 rounded position-absolute"
+                                style="top: 10px; right: 10px;">Vegetable</div>
+                            <div class="p-4 pb-0 rounded-bottom">
+                                <h4>Bell Papper</h4>
+                                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit sed do eiusmod te incididunt
+                                </p>
+                                <div class="d-flex justify-content-between flex-lg-wrap">
+                                    <p class="text-dark fs-5 fw-bold">$7.99 / kg</p>
+                                    <a href="#"
+                                        class="btn border border-secondary rounded-pill px-3 py-1 mb-4 text-primary"><i
+                                            class="fa fa-shopping-bag me-2 text-primary"></i> Add to cart</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border border-primary rounded position-relative vesitable-item">
+                            <div class="vesitable-img">
+                                <img src="/client/img/vegetable-item-5.jpg" class="img-fluid w-100 rounded-top" alt="">
+                            </div>
+                            <div class="text-white bg-primary px-3 py-1 rounded position-absolute"
+                                style="top: 10px; right: 10px;">Vegetable</div>
+                            <div class="p-4 pb-0 rounded-bottom">
+                                <h4>Potatoes</h4>
+                                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit sed do eiusmod te incididunt
+                                </p>
+                                <div class="d-flex justify-content-between flex-lg-wrap">
+                                    <p class="text-dark fs-5 fw-bold">$7.99 / kg</p>
+                                    <a href="#"
+                                        class="btn border border-secondary rounded-pill px-3 py-1 mb-4 text-primary"><i
+                                            class="fa fa-shopping-bag me-2 text-primary"></i> Add to cart</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border border-primary rounded position-relative vesitable-item">
+                            <div class="vesitable-img">
+                                <img src="/client/img/vegetable-item-6.jpg" class="img-fluid w-100 rounded-top" alt="">
+                            </div>
+                            <div class="text-white bg-primary px-3 py-1 rounded position-absolute"
+                                style="top: 10px; right: 10px;">Vegetable</div>
+                            <div class="p-4 pb-0 rounded-bottom">
+                                <h4>Parsely</h4>
+                                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit sed do eiusmod te incididunt
+                                </p>
+                                <div class="d-flex justify-content-between flex-lg-wrap">
+                                    <p class="text-dark fs-5 fw-bold">$7.99 / kg</p>
+                                    <a href="#"
+                                        class="btn border border-secondary rounded-pill px-3 py-1 mb-4 text-primary"><i
+                                            class="fa fa-shopping-bag me-2 text-primary"></i> Add to cart</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border border-primary rounded position-relative vesitable-item">
+                            <div class="vesitable-img">
+                                <img src="/client/img/vegetable-item-5.jpg" class="img-fluid w-100 rounded-top" alt="">
+                            </div>
+                            <div class="text-white bg-primary px-3 py-1 rounded position-absolute"
+                                style="top: 10px; right: 10px;">Vegetable</div>
+                            <div class="p-4 pb-0 rounded-bottom">
+                                <h4>Potatoes</h4>
+                                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit sed do eiusmod te incididunt
+                                </p>
+                                <div class="d-flex justify-content-between flex-lg-wrap">
+                                    <p class="text-dark fs-5 fw-bold">$7.99 / kg</p>
+                                    <a href="#"
+                                        class="btn border border-secondary rounded-pill px-3 py-1 mb-4 text-primary"><i
+                                            class="fa fa-shopping-bag me-2 text-primary"></i> Add to cart</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border border-primary rounded position-relative vesitable-item">
+                            <div class="vesitable-img">
+                                <img src="/client/img/vegetable-item-6.jpg" class="img-fluid w-100 rounded-top" alt="">
+                            </div>
+                            <div class="text-white bg-primary px-3 py-1 rounded position-absolute"
+                                style="top: 10px; right: 10px;">Vegetable</div>
+                            <div class="p-4 pb-0 rounded-bottom">
+                                <h4>Parsely</h4>
+                                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit sed do eiusmod te incididunt
+                                </p>
+                                <div class="d-flex justify-content-between flex-lg-wrap">
+                                    <p class="text-dark fs-5 fw-bold">$7.99 / kg</p>
+                                    <a href="#"
+                                        class="btn border border-secondary rounded-pill px-3 py-1 mb-4 text-primary"><i
+                                            class="fa fa-shopping-bag me-2 text-primary"></i> Add to cart</a>
+                                </div>
+                            </div>
+                        </div> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Single Product End -->
+
+
+        <!-- Footer Start -->
+        <%- include('../layout/footer.ejs') -%>
+            <!-- Footer End -->
+
+
+
+
+            <!-- Back to Top -->
+            <a href="#" class="btn btn-primary border-3 border-primary rounded-circle back-to-top"><i
+                    class="fa fa-arrow-up"></i></a>
+
+
+            <!-- JavaScript Libraries -->
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+            <script src="/client/lib/easing/easing.min.js"></script>
+            <script src="/client/lib/waypoints/waypoints.min.js"></script>
+            <script src="/client/lib/lightbox/js/lightbox.min.js"></script>
+            <script src="/client/lib/owlcarousel/owl.carousel.min.js"></script>
+
+            <!-- Template Javascript -->
+            <script src="/client/js/main.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.js" integrity="sha512-zlWWyZq71UMApAjih4WkaRpikgY9Bz1oXIW5G0fED4vk14JjGlQ1UmkGM392jEULP8jbNMiwLWdM8Z87Hu88Fw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</body>
+
+</html>

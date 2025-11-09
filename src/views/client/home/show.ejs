@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>LianHarman - shop</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+    <link rel="icon" type="image/svg+xml" href="/im/Logo-Client.svg">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Raleway:wght@600;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="client/lib/lightbox/css/lightbox.min.css" rel="stylesheet">
+    <link href="client/lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="client/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="/client/css/style.css" rel="stylesheet">
+
+    <!-- Toast -->
+     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.css" integrity="sha512-wJgJNTBBkLit7ymC6vvzM1EcSWeM9mmOu+1USHaRBbHkm6W9EgM0HY27+UtUaprntaYQJF75rc8gjxllKs5OIQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+
+<body>
+
+    <!-- Spinner Start -->
+    <div id="spinner"
+        class="show w-100 vh-100 bg-white position-fixed translate-middle top-50 start-50  d-flex align-items-center justify-content-center">
+        <div class="spinner-grow text-primary" role="status"></div>
+    </div>
+    <!-- Spinner End -->
+
+    <!-- Navbar start -->
+    <%- include('../layout/header.ejs') -%>
+        <!-- Navbar End -->
+
+        <!-- Hero Start -->
+        <%- include('../layout/banner.ejs') -%>
+            <!-- Hero End -->
+
+
+            <!-- Features Section Start -->
+            <%- include('../layout/feature.ejs') -%>
+                <!-- Features Section End -->
+
+
+                <!-- Fruits Shop Start-->
+                <div class="container-fluid fruite py-5">
+                    <div class="container py-5">
+                        <div class="tab-class text-center">
+                            <div class="row g-4">
+                                <div class="col-lg-4 text-start">
+                                    <h3>Sản phẩm nổi bật của chúng tôi</h3>
+                                </div>
+                                <div class="col-lg-8 text-end">
+                                    <ul class="nav nav-pills d-inline-flex text-center mb-5">
+                                        <li class="nav-item">
+                                            <a class="d-flex m-2 py-2 bg-light rounded-pill active"
+                                                data-bs-toggle="pill" href="#tab-all">
+                                                <span class="text-dark" style="width: 130px;">All Products</span>
+                                            </a>
+                                        </li>
+                                        <% if (factories && factories.length > 0) { %>
+                                            <% factories.forEach((factory) => { %>
+                                                <li class="nav-item">
+                                                    <a class="d-flex m-2 py-2 bg-light rounded-pill" data-bs-toggle="pill" href="#tab-<%= factory.id %>">
+                                                        <span class="text-dark" style="width: auto; min-width: 100px;"><%= factory.name %></span>
+                                                    </a>
+                                                </li>
+                                            <% }) %>
+                                        <% } %>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="tab-content">
+                                <div id="tab-all" class="tab-pane fade show p-0 active">
+                                    <div class="row g-4">
+                                        <div class="col-lg-12">
+                                            <div class="row g-4">
+                                                <% if (products && products.length > 0) { %>
+                                                <% products.forEach((product)=> { %>
+                                                    <div class="col-md-6 col-lg-4 col-xl-3 d-flex">
+                                                        <div class="rounded position-relative fruite-item d-flex flex-column h-100 product-card"
+                                                            data-href="/product/<%= product.id %>"
+                                                            style="cursor:pointer;">
+                                                            <div class="fruite-img position-relative" style="overflow: hidden;">
+                                                                <img src="/images/products/<%= product.image %>"
+                                                                    class="img-fluid w-100 rounded-top" alt="" style="object-fit: cover; height: 230px; max-height: 240px; width: 320px; min-width: 300px;"/>
+                                                                <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 32%; pointer-events: none; 
+                                                                background: linear-gradient(to top, rgba(0,0,0,0.22), rgba(0,0,0,0)); 
+                                                                border-bottom-left-radius: inherit; border-bottom-right-radius: inherit;"></div>
+                                                                <% if (product.quantity === 0 || product.status === 'OUT_OF_STOCK') { %>
+                                                                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;">
+                                                                        <span class="text-danger fw-bold bg-white bg-opacity-75 px-3 py-2 rounded" style="font-size:1.2rem;">Đã hết hàng</span>
+                                                                    </div>
+                                                                <% } %>
+                                                            </div>
+                                                            <div class="text-white bg-secondary px-3 py-1 rounded position-absolute"
+                                                                style="top: 10px; left: 10px;"><%= product.target.name %></div>
+                                                            <div
+                                                                class="p-4 border border-secondary border-top-0 rounded-bottom mt-auto">
+                                                                <h4 style="font-size: 20px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-height: 48px;">
+                                                                    <%= product.name %>
+                                                                </h4>
+                                                                <p
+                                                                    style="font-size: 14px; text-align: center; width: 100%;">
+                                                                    <%= product.shortDesc %>
+                                                                </p>
+                                                                <div class="d-flex justify-content-center flex-lg-wrap">
+                                                                    <p class="fs-5">
+                                                                        <%= (product.price + (product.productVariants[0]?.priceMore || 0)).toLocaleString('vi-VN') %> VND
+                                                                    </p>
+                                                                </div>
+                                                                <!-- Nút thêm vào giỏ hàng -->
+                                                                <% if (product.quantity === 0 || product.status === 'OUT_OF_STOCK') { %>
+                                                                    <div class="mx-auto mt-auto w-100 d-flex flex-column align-items-center justify-content-center">
+                                                                        <button type="button" class="btn border border-secondary rounded-pill px-3 text-secondary mt-auto add-to-cart-btn" disabled style="opacity:0.6;cursor:not-allowed;">
+                                                                            <i class="fa fa-shopping-bag me-2 text-secondary"></i>
+                                                                            Thêm vào giỏ hàng
+                                                                        </button>
+                                                                    </div>
+                                                                <% } else { %>
+                                                                    <form action="/add-product-to-cart/<%= product.id %>" method="POST"
+                                                                        class="mx-auto mt-auto w-100 d-flex justify-content-center"
+                                                                        onClick="event.stopPropagation();">
+                                                                        <input type="hidden" name="productVariantId" value="<%= product.productVariants[0]?.id %>">
+                                                                        <button type="submit" data-product-id="<%= product.id %>"
+                                                                            class="btnAddToCartProduct btn border border-secondary rounded-pill px-3 text-primary mt-auto add-to-cart-btn">
+                                                                            <i
+                                                                                class="fa fa-shopping-bag me-2 text-primary"></i>
+                                                                            Thêm vào giỏ hàng
+                                                                        </button>
+                                                                    </form>
+                                                                <% } %>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <% }) %>
+                                                    <% } else { %>
+                                                        <p>Không có sản phẩm nào.</p>
+                                                        <% } %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <% if (factories.length > 0) { %>
+                                    <% factories.forEach((factory) => { %>
+                                        <div id="tab-<%= factory.id %>" class="tab-pane fade show p-0">
+                                            <div class="row g-4">
+                                            <div class="col-lg-12">
+                                                <div class="row g-4">
+                                                <% if (products && products.length > 0 && factories.length > 0) { %>
+                                                <% products.forEach((product)=> { %>
+                                                    <% if (factory.name === product.factory.name && factory.id === product.factory.id) { %>
+                                                    <div class="col-md-6 col-lg-4 col-xl-3 d-flex">
+                                                        <div class="rounded position-relative fruite-item d-flex flex-column h-100 product-card"
+                                                            data-href="/product/<%= product.id %>"
+                                                            style="cursor:pointer;">
+                                                            <div class="fruite-img position-relative" style="overflow: hidden;">
+                                                                <img src="/images/products/<%= product.image %>"
+                                                                    class="img-fluid w-100 rounded-top" alt="" style="object-fit: cover; height: 230px; max-height: 240px; width: 320px; min-width: 300px;"/>
+                                                                <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 32%; pointer-events: none; 
+                                                                background: linear-gradient(to top, rgba(0,0,0,0.22), rgba(0,0,0,0)); 
+                                                                border-bottom-left-radius: inherit; border-bottom-right-radius: inherit;"></div>
+                                                                <% if (product.quantity === 0 || product.status === 'OUT_OF_STOCK') { %>
+                                                                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;">
+                                                                        <span class="text-danger fw-bold bg-white bg-opacity-75 px-3 py-2 rounded" style="font-size:1.2rem;">Đã hết hàng</span>
+                                                                    </div>
+                                                                <% } %>
+                                                            </div>
+                                                            <div class="text-white bg-secondary px-3 py-1 rounded position-absolute"
+                                                                style="top: 10px; left: 10px;"><%= product.target.name %></div>
+                                                            <div
+                                                                class="p-4 border border-secondary border-top-0 rounded-bottom mt-auto">
+                                                                <h4 style="font-size: 20px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-height: 48px;">
+                                                                    <%= product.name %>
+                                                                </h4>
+                                                                <p
+                                                                    style="font-size: 14px; text-align: center; width: 100%;">
+                                                                    <%= product.shortDesc %>
+                                                                </p>
+                                                                <div class="d-flex justify-content-center flex-lg-wrap">
+                                                                    <p class="fs-5">
+                                                                         <%= (product.price + (product.productVariants[0]?.priceMore || 0)).toLocaleString('vi-VN') %> VND
+                                                                    </p>
+                                                                </div>
+                                                                <!-- Nút thêm vào giỏ hàng -->
+                                                                 <!-- Nút thêm vào giỏ hàng -->
+                                                                <% if (product.quantity === 0 || product.status === 'OUT_OF_STOCK') { %>
+                                                                    <div class="mx-auto mt-auto w-100 d-flex flex-column align-items-center justify-content-center">
+                                                                        <button type="button" class="btn border border-secondary rounded-pill px-3 text-secondary mt-auto add-to-cart-btn" disabled style="opacity:0.6;cursor:not-allowed;">
+                                                                            <i class="fa fa-shopping-bag me-2 text-secondary"></i>
+                                                                            Thêm vào giỏ hàng
+                                                                        </button>
+                                                                    </div>
+                                                                <% } else { %>
+                                                                    <form action="/add-product-to-cart/<%= product.id %>" method="POST"
+                                                                        class="mx-auto mt-auto w-100 d-flex justify-content-center"
+                                                                        onClick="event.stopPropagation();">
+                                                                        <input type="hidden" name="productVariantId" value="<%= product.productVariants[0]?.id %>">
+                                                                        <button type="submit" data-product-id="<%= product.id %>"
+                                                                            class="btnAddToCartProduct btn border border-secondary rounded-pill px-3 text-primary mt-auto add-to-cart-btn">
+                                                                            <i
+                                                                                class="fa fa-shopping-bag me-2 text-primary"></i>
+                                                                            Thêm vào giỏ hàng
+                                                                        </button>
+                                                                    </form>
+                                                                <% } %>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <% } %>
+                                                    <% }) %>
+                                                    <% } else { %>
+                                                        <p>Không có sản phẩm nào.</p>
+                                                        <% } %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                    <% }) %>
+                                <% } %>
+                            </div>
+
+                            <div class="pagination d-flex justify-content-center mt-5">
+                                <li class="<%= currentPage === 0 ? 'disabled page-item' : 'page-item' %> ">
+                                    <a class="page-link" href="/?page=<%= currentPage - 1 %>"
+                                    aria-label="Previous"><span aria-hidden="true">&laquo;</span></a>
+                                </li>
+                                    <% for(var i=0; i < totalPages; i++) {%>
+                                <li class="page-item">
+                                    <a class="<%= currentPage === i ? 'active page-link' : 'page-link' %>"
+                                    href="/?page=<%= i %>"><%= i+1 %></a>
+                                </li>
+                                    <% } %>
+                                <li class="<%= currentPage === totalPages - 1  ? 'disabled page-item' : 'page-item' %> ">
+                                    <a class="page-link"
+                                    href="/?page=<%= currentPage + 1 %>"
+                                    aria-label="Next"><span aria-hidden="true">&raquo;</span></a>
+                                </li>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                <!-- Fruits Shop End-->
+
+                <!-- Banner Section Start-->
+                <!-- <div class="container-fluid banner bg-secondary my-5">
+            <div class="container py-5">
+                <div class="row g-4 align-items-center">
+                    <div class="col-lg-6">
+                        <div class="py-4">
+                            <h1 class="display-3 text-white">Fresh Exotic Fruits</h1>
+                            <p class="fw-normal display-3 text-dark mb-4">in Our Store</p>
+                            <p class="mb-4 text-dark">The generated Lorem Ipsum is therefore always free from repetition injected humour, or non-characteristic words etc.</p>
+                            <a href="#" class="banner-btn btn border-2 border-white rounded-pill text-dark py-3 px-5">BUY</a>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="position-relative">
+                            <img src="client/img/baner-1.png" class="img-fluid w-100 rounded" alt="">
+                            <div class="d-flex align-items-center justify-content-center bg-white rounded-circle position-absolute" style="width: 140px; height: 140px; top: 0; left: 0;">
+                                <h1 style="font-size: 100px;">1</h1>
+                                <div class="d-flex flex-column">
+                                    <span class="h2 mb-0">50$</span>
+                                    <span class="h4 text-muted mb-0">kg</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> -->
+                <!-- Banner Section End -->
+
+
+                <!-- Bestsaler Product Start -->
+                <!-- <%- include("../layout/bestsaler.ejs") -%> -->
+                <!-- Bestsaler Product End -->
+
+
+                <!-- Fact Start -->
+                <div class="container-fluid py-5">
+                    <div class="container">
+                        <div class="bg-light p-5 rounded">
+                            <div class="row g-4 justify-content-center">
+                                <div class="col-md-6 col-lg-6 col-xl-3">
+                                    <div class="counter bg-white rounded p-5">
+                                        <i class="fa fa-users text-secondary"></i>
+                                        <h4>Khách hàng hài lòng</h4>
+                                        <h1>1963</h1>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-lg-6 col-xl-3">
+                                    <div class="counter bg-white rounded p-5">
+                                        <i class="fa fa-users text-secondary"></i>
+                                        <h4>Chất lượng dịch vụ</h4>
+                                        <h1>99%</h1>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-lg-6 col-xl-3">
+                                    <div class="counter bg-white rounded p-5">
+                                        <i class="fa fa-users text-secondary"></i>
+                                        <h4>Chứng nhận chất lượng</h4>
+                                        <h1>33</h1>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-lg-6 col-xl-3">
+                                    <div class="counter bg-white rounded p-5">
+                                        <i class="fa fa-users text-secondary"></i>
+                                        <h4>Sản phẩm có sẵn</h4>
+                                        <h1>789</h1>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Fact Start -->
+
+
+                <!-- Tastimonial Start -->
+                <!-- <div class="container-fluid testimonial py-5">
+            <div class="container py-5">
+                <div class="testimonial-header text-center">
+                    <h4 class="text-primary">Our Testimonial</h4>
+                    <h1 class="display-5 mb-5 text-dark">Our Client Saying!</h1>
+                </div>
+                <div class="owl-carousel testimonial-carousel">
+                    <div class="testimonial-item img-border-radius bg-light rounded p-4">
+                        <div class="position-relative">
+                            <i class="fa fa-quote-right fa-2x text-secondary position-absolute" style="bottom: 30px; right: 0;"></i>
+                            <div class="mb-4 pb-4 border-bottom border-secondary">
+                                <p class="mb-0">Lorem Ipsum is simply dummy text of the printing Ipsum has been the industry's standard dummy text ever since the 1500s,
+                                </p>
+                            </div>
+                            <div class="d-flex align-items-center flex-nowrap">
+                                <div class="bg-secondary rounded">
+                                    <img src="client/img/testimonial-1.jpg" class="img-fluid rounded" style="width: 100px; height: 100px;" alt="">
+                                </div>
+                                <div class="ms-4 d-block">
+                                    <h4 class="text-dark">Client Name</h4>
+                                    <p class="m-0 pb-3">Profession</p>
+                                    <div class="d-flex pe-5">
+                                        <i class="fas fa-star text-primary"></i>
+                                        <i class="fas fa-star text-primary"></i>
+                                        <i class="fas fa-star text-primary"></i>
+                                        <i class="fas fa-star text-primary"></i>
+                                        <i class="fas fa-star"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testimonial-item img-border-radius bg-light rounded p-4">
+                        <div class="position-relative">
+                            <i class="fa fa-quote-right fa-2x text-secondary position-absolute" style="bottom: 30px; right: 0;"></i>
+                            <div class="mb-4 pb-4 border-bottom border-secondary">
+                                <p class="mb-0">Lorem Ipsum is simply dummy text of the printing Ipsum has been the industry's standard dummy text ever since the 1500s,
+                                </p>
+                            </div>
+                            <div class="d-flex align-items-center flex-nowrap">
+                                <div class="bg-secondary rounded">
+                                    <img src="client/img/testimonial-1.jpg" class="img-fluid rounded" style="width: 100px; height: 100px;" alt="">
+                                </div>
+                                <div class="ms-4 d-block">
+                                    <h4 class="text-dark">Client Name</h4>
+                                    <p class="m-0 pb-3">Profession</p>
+                                    <div class="d-flex pe-5">
+                                        <i class="fas fa-star text-primary"></i>
+                                        <i class="fas fa-star text-primary"></i>
+                                        <i class="fas fa-star text-primary"></i>
+                                        <i class="fas fa-star text-primary"></i>
+                                        <i class="fas fa-star text-primary"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testimonial-item img-border-radius bg-light rounded p-4">
+                        <div class="position-relative">
+                            <i class="fa fa-quote-right fa-2x text-secondary position-absolute" style="bottom: 30px; right: 0;"></i>
+                            <div class="mb-4 pb-4 border-bottom border-secondary">
+                                <p class="mb-0">Lorem Ipsum is simply dummy text of the printing Ipsum has been the industry's standard dummy text ever since the 1500s,
+                                </p>
+                            </div>
+                            <div class="d-flex align-items-center flex-nowrap">
+                                <div class="bg-secondary rounded">
+                                    <img src="client/img/testimonial-1.jpg" class="img-fluid rounded" style="width: 100px; height: 100px;" alt="">
+                                </div>
+                                <div class="ms-4 d-block">
+                                    <h4 class="text-dark">Client Name</h4>
+                                    <p class="m-0 pb-3">Profession</p>
+                                    <div class="d-flex pe-5">
+                                        <i class="fas fa-star text-primary"></i>
+                                        <i class="fas fa-star text-primary"></i>
+                                        <i class="fas fa-star text-primary"></i>
+                                        <i class="fas fa-star text-primary"></i>
+                                        <i class="fas fa-star text-primary"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> -->
+                <!-- Tastimonial End -->
+
+
+                <!-- Footer Start -->
+                <%- include("../layout/footer.ejs") %>
+                    <!-- Footer End -->
+
+
+                    <!-- Back to Top -->
+                    <a href="#" class="btn btn-primary border-3 border-primary rounded-circle back-to-top"><i
+                            class="fa fa-arrow-up"></i></a>
+
+
+                    <!-- JavaScript Libraries -->
+                    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+                    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+                    <script src="/client/lib/easing/easing.min.js"></script>
+                    <script src="/client/lib/waypoints/waypoints.min.js"></script>
+                    <script src="/client/lib/lightbox/js/lightbox.min.js"></script>
+                    <script src="/client/lib/owlcarousel/owl.carousel.min.js"></script>
+
+                    <!-- Template Javascript -->
+                    <script src="/client/js/main.js"></script>
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.js" integrity="sha512-zlWWyZq71UMApAjih4WkaRpikgY9Bz1oXIW5G0fED4vk14JjGlQ1UmkGM392jEULP8jbNMiwLWdM8Z87Hu88Fw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</body>
+
+</html>

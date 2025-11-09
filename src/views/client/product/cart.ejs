@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>My Cart - laptopshop</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+    <link rel="icon" type="image/svg+xml" href="/im/Logo-Client.svg">
+
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Raleway:wght@600;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="/client/lib/lightbox/css/lightbox.min.css" rel="stylesheet">
+    <link href="/client/lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="/client/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="/client/css/style.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.css" integrity="sha512-wJgJNTBBkLit7ymC6vvzM1EcSWeM9mmOu+1USHaRBbHkm6W9EgM0HY27+UtUaprntaYQJF75rc8gjxllKs5OIQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+
+<body>
+
+    <!-- Spinner Start -->
+    <div id="spinner"
+        class="show w-100 vh-100 bg-white position-fixed translate-middle top-50 start-50  d-flex align-items-center justify-content-center">
+        <div class="spinner-grow text-primary" role="status"></div>
+    </div>
+    <!-- Spinner End -->
+
+
+    <!-- Navbar start -->
+    <%- include('../layout/header.ejs') -%>
+        <!-- Navbar End -->
+        <div class="py-4"></div>
+
+        <!-- Single Product Start -->
+        <div class="container-fluid page-header py-5">
+            <h1 class="text-center text-white display-6">Giỏ hàng của tôi</h1>
+            <ol class="breadcrumb justify-content-center mb-0">
+                <li class="breadcrumb-item"><a href="/">Home</a></li>
+                <li class="breadcrumb-item active text-white">Giỏ hàng</li>
+            </ol>
+        </div>
+        <!-- Single Page Header End -->
+
+
+        <!-- Cart Page Start -->
+        <div class="container-fluid py-5">
+            <div class="container py-5">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle text-center" style="vertical-align: middle;">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <div class="form-check d-flex justify-content-center align-items-center mb-0" style="height: 100%; min-height: 40px;">
+                                        <input class="form-check-input" type="checkbox" id="selectAll" style="transform: scale(1.6); margin: 0 auto; display: block;">
+                                    </div>
+                                </th>
+                                <th scope="col">Sản phẩm</th>
+                                <th scope="col">Tên</th>
+                                <th scope="col">Chọn phiên bản</th>
+                                <th scope="col">Giá</th>
+                                <th scope="col">Số lượng</th>
+                                <th scope="col">Tổng cộng</th>
+                                <th scope="col">Xử lý</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (cartDetails && cartDetails.length> 0) { %>
+                                <% cartDetails.forEach((item, index)=> { %>
+                                    <tr class="detailCartId:<%= item.id %> align-middle" style="vertical-align: middle;">
+                                        <td class="align-middle" style="vertical-align: middle;">
+                                            <div class="form-check d-flex justify-content-center align-items-center mb-0" style="height: 100%; min-height: 40px;">
+                                                <input class="form-check-input cart-checkbox" name="selectedItems" value="<%= item.id %>" type="checkbox" style="transform: scale(1.6); margin: 0 auto; display: block;">
+                                            </div>
+                                        </td>
+                                        <td class="align-middle" style="vertical-align: middle;">
+                                            <div class="d-flex align-items-center justify-content-center">
+                                                <img src="<%= item.product.image ? '/images/products/' + item.product.image : '/client/img/default-product.png' %>"
+                                                    class="img-fluid me-2 rounded-circle border border-2"
+                                                    style="width: 60px; height: 60px; object-fit: cover;"
+                                                    alt="image product <%= item.product.name %>">
+                                            </div>
+                                        </td>
+                                        <td class="align-middle" style="vertical-align: middle;">
+                                            <p class="mb-0 text-primary fw-bold">
+                                                <a href="/product/<%= item.product.id %>"
+                                                    class="text-decoration-none fw-bold">
+                                                    <%= item.product.name %>
+                                                </a>
+                                            </p>
+                                        </td>
+                                        <td class="align-middle" style="vertical-align: middle; min-width: 160px;">
+                                            <% if (item.product.productVariants && item.product.productVariants.length > 0) { %>
+                                                <select class="form-select form-select-sm w-100" name="variantSelect-<%= item.id %>" style="min-width: 140px;">
+                                                    <% item.product.productVariants.forEach(function(variant) { %>
+                                                        <option value="<%= variant.id %>" data-pricemore="<%= variant.priceMore || 0 %>" <%= variant.id === item.productVariantId ? 'selected' : '' %>>
+                                                            <%= variant.cpu %> | <%= variant.memory %> | <%= variant.color %>
+                                                        </option>
+                                                    <% }); %>
+                                                </select>
+                                            <% } else { %>
+                                                <span class="text-muted">Không có</span>
+                                            <% } %>
+                                        </td>
+                                        <td class="align-middle" style="vertical-align: middle; min-width: 110px;">
+                                            <p class="mb-0 text-warning fw-bold" id="price-display-<%= item.id %>"
+                                               data-base-price="<%= item.product.price %>"
+                                               data-selected-pricemore="<%=
+                                                    (item.product.productVariants && item.product.productVariants.length > 0)
+                                                    ? (item.product.productVariants.find(v => v.id == item.productVariantId)?.priceMore || 0)
+                                                    : 0
+                                               %>">
+                                                <% 
+                                                    let variantPrice = 0;
+                                                    if (item.product.productVariants && item.product.productVariants.length > 0) {
+                                                        const selectedVariant = item.product.productVariants.find(v => v.id == item.productVariantId) || item.product.productVariants[0];
+                                                        variantPrice = Number(selectedVariant && selectedVariant.priceMore ? selectedVariant.priceMore : 0);
+                                                    }
+                                                    const totalUnitPrice = Number(item.product.price) + variantPrice;
+                                                %>
+                                                <%= totalUnitPrice.toLocaleString('vi-VN') %> VND
+                                            </p>
+                                        </td>
+                                        <td class="align-middle" style="vertical-align: middle; min-width: 120px;">
+                                            <div class="input-group quantity d-flex align-items-center justify-content-center" style="width: 100%;">
+                                                <button class="btn btn-sm btn-minus rounded-circle bg-light border me-1" type="button">
+                                                    <i class="fa fa-minus"></i>
+                                                </button>
+                                                <input type="number" name="quantityProduct" min="1"
+                                                    max="<%= item.product.quantity %>"
+                                                    class="form-control form-control-sm text-center border-0 mx-1"
+                                                    value="<%= item.quantityProduct %>"
+                                                    style="width: 40px; min-width: 30px;"
+                                                    data-InputCartDetail-id="<%= item.id %>"
+                                                    data-InputCartDetail-price="<%= item.product.price %>"
+                                                    data-InputQuantityCartDetail-index="<%= index %>">
+                                                <button class="btn btn-sm btn-plus rounded-circle bg-light border ms-1" type="button">
+                                                    <i class="fa fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td class="align-middle" style="vertical-align: middle; min-width: 120px;">
+                                            <p class="mb-0 text-danger fw-bold" data-OutPutCartDetail-id="<%= item.id %>">
+                                                <%
+                                                    let variantPriceRow = 0;
+                                                    if (item.product.productVariants && item.product.productVariants.length > 0) {
+                                                        const selectedVariantRow = item.product.productVariants.find(function(v) { return v.id == item.productVariantId; }) || item.product.productVariants[0];
+                                                        variantPriceRow = Number(selectedVariantRow && selectedVariantRow.priceMore ? selectedVariantRow.priceMore : 0);
+                                                    }
+                                                    const totalUnitPriceRow = Number(item.product.price) + variantPriceRow;
+                                                    const totalLineRow = totalUnitPriceRow * Number(item.quantityProduct);
+                                                %>
+                                                <%= totalLineRow.toLocaleString('vi-VN') %> VND
+                                            </p>
+                                        </td>
+                                        <td class="align-middle" style="vertical-align: middle; min-width: 60px;">
+                                            <form action="/cart/remove/<%= item.productId %>" method="POST" class="mb-0">
+                                                <button class="btn btn-md rounded-circle bg-light border" type="submit" title="Xóa sản phẩm">
+                                                    <i class="fa fa-times text-danger"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    <% }); %>
+                                        <% } else { %>
+                                            <tr>
+                                                <td colspan="8" class="text-center">Giỏ hàng trống</td>
+                                            </tr>
+                                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-5 row g-4 justify-content-start">
+                    <div class="col-12 col-md-8">
+                        <% if (cartDetails && cartDetails.length> 0) { %>
+                            <div class="bg-light rounded">
+                                <div class="p-4">
+                                    <h1 class="display-6 mb-4">Giỏ hàng <span class="fw-normal">Tổng cộng</span></h1>
+                                    <div class="d-flex justify-content-between mb-4">
+                                        <h5 class="mb-0 me-4">Tạm tính:</h5>
+                                        <p class="mb-0" data-TotalPrice="0">
+                                            0 VND
+                                        </p>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <h5 class="mb-0 me-4">Vận chuyển</h5>
+                                        <div class="">
+                                            <p class="mb-0">Phí cố định: <%= (TotalPrice> 0 ? 30000 :
+                                                    0).toLocaleString('vi-VN') %> VND / 1KM</p>
+                                        </div>
+                                    </div>
+                                    <!-- <p class="mb-0 text-end">Vận chuyển đến Ukraine.</p> -->
+                                </div>
+                                <div class="py-4 mb-4 border-top border-bottom d-flex justify-content-between">
+                                    <h5 class="mb-0 ps-4 me-4">Tổng cộng</h5>
+                                    <p class="mb-0 pe-4 fw-bold text-danger" data-TotalPriceTT="<%= TotalPrice %>">
+                                        <%= (TotalPrice + (TotalPrice> 0 ? 30000 : 0)).toLocaleString('vi-VN') %> VND
+                                    </p>
+                                </div>
+                                <form action="/handle-add-to-cart" method="POST">
+                                    <table class="table table-bordered" style="display: none;">
+                                        <thead>
+                                            <tr>
+                                                <th>
+                                                    check
+                                                </th>
+                                                <th>#</th>
+                                                <th>Id</th>
+                                                <th>Quantity</th>
+                                                <th>Variant</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% cartDetails.forEach(function(cartDetail, index) { %>
+                                                <tr>
+                                                    <td>
+                                                        <div class="form-check d-flex justify-content-center align-items-center mb-0" style="height: 100%; min-height: 40px;">
+                                                            <input class="form-check-input cart-checkbox" name="cartDetails[<%= index %>][selectedItems]" value="<%= cartDetail.id %>" type="checkbox" style="transform: scale(1.6); margin: 0 auto; display: block;">
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <%= index + 1 %>
+                                                    </td>
+                                                    <td>
+                                                        <input class="form-control" type="number"
+                                                            value="<%= cartDetail.id %>"
+                                                            name="cartDetails[<%= index %>][id]" />
+                                                    </td>
+                                                    <td>
+                                                        <input class="form-control" type="number"
+                                                            value="<%= cartDetail.quantityProduct %>"
+                                                            name="cartDetails[<%= index %>][quantity]"
+                                                            id="cartDetails[<%= index %>]" />
+                                                    </td>
+                                                    <td>
+                                                        <input class="form-control" type="number" 
+                                                        name="cartDetails[<%= index %>][variantId]" 
+                                                        value="<%= cartDetail.productVariantId %>"
+                                                        id="cartDetails[<%= index %>][variantId]" />
+                                                    </td>
+                                                </tr>
+                                                <% }) %>
+                                        </tbody>
+                                    </table>
+
+                                    <button
+                                        class="btn border-secondary rounded-pill px-4 py-3 text-primary text-uppercase mb-4 ms-4"
+                                        type="submit" id="btnCheckout">Tiến hành thanh toán</button>
+                                </form>
+                            </div>
+                            <% } else{ %>
+                                <div class="bg-light rounded">
+                                    <div class="p-4">
+                                        <h1 class="display-6 mb-4">Giỏ hàng <span class="fw-normal">Tổng cộng</span>
+                                        </h1>
+                                        <div class="d-flex justify-content-between mb-4">
+                                            <h5 class="mb-0 me-4">Tạm tính:</h5>
+                                            <p class="mb-0" data-TotalPrice="<%= TotalPrice %>">0 VND</p>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <h5 class="mb-0 me-4">Vận chuyển</h5>
+                                            <div class="">
+                                                <p class="mb-0">Phí cố định: 30.000 VND / 1KM</p>
+                                            </div>
+                                        </div>
+                                        <!-- <p class="mb-0 text-end">Vận chuyển đến Ukraine.</p> -->
+                                    </div>
+                                    <div class="py-4 mb-4 border-top border-bottom d-flex justify-content-between">
+                                        <h5 class="mb-0 ps-4 me-4">Tổng cộng</h5>
+                                        <p class="mb-0 pe-4 fw-bold text-danger" data-TotalPriceTT="<%= TotalPrice %>">0
+                                            VND</p>
+                                    </div>
+                                    <button
+                                        class="btn border-secondary rounded-pill px-4 py-3 text-primary text-uppercase mb-4 ms-4"
+                                        type="button" disabled>Tiến hành thanh toán</button>
+                                </div>
+                                <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Start -->
+        <%- include('../layout/footer.ejs') -%>
+            <!-- Footer End -->
+
+
+
+
+            <!-- Back to Top -->
+            <a href="#" class="btn btn-primary border-3 border-primary rounded-circle back-to-top"><i
+                    class="fa fa-arrow-up"></i></a>
+
+
+            <!-- JavaScript Libraries -->
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+            <script src="/client/lib/easing/easing.min.js"></script>
+            <script src="/client/lib/waypoints/waypoints.min.js"></script>
+            <script src="/client/lib/lightbox/js/lightbox.min.js"></script>
+            <script src="/client/lib/owlcarousel/owl.carousel.min.js"></script>
+
+            <!-- Template Javascript -->
+            <script src="/client/js/main.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.js" integrity="sha512-zlWWyZq71UMApAjih4WkaRpikgY9Bz1oXIW5G0fED4vk14JjGlQ1UmkGM392jEULP8jbNMiwLWdM8Z87Hu88Fw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</body>
+
+</html>

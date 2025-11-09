@@ -1,0 +1,235 @@
+<!-- Thêm script Web3.js và file tích hợp -->
+<script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+
+<!-- CSS cho nút thanh toán crypto -->
+<style>
+    .crypto-payment-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: #0d6efd;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .crypto-payment-btn:hover {
+        background: #0b5ed7;
+    }
+    .crypto-payment-btn img {
+        width: 24px;
+        height: 24px;
+    }
+    #cryptoPrice {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 5px;
+    }
+</style>
+
+<!-- Thêm vào sau phần giá sản phẩm -->
+<div class="payment-section mt-3">
+    <h4>Phương thức thanh toán</h4>
+    
+    <!-- Nút thanh toán thông thường -->
+    <form action="/add-product-to-cart/<%= product.id %>" method="post" class="mb-3">
+        <!-- Form hiện tại của bạn -->
+    </form>
+
+    <!-- Lưu giá sản phẩm -->
+    <div id="product-price" data-price="<%= product.price %>" style="display: none;"></div>
+
+    <!-- Thêm phần thanh toán crypto -->
+    <div class="crypto-payment">
+        <button class="crypto-payment-btn" onclick="purchaseWithCrypto('<%= product.id %>', document.getElementById('product-price').dataset.price)">
+            <img src="https://raw.githubusercontent.com/MetaMask/brand-resources/master/SVG/metamask-fox.svg" alt="Metamask" />
+            Thanh toán bằng Crypto
+        </button>
+        <div id="cryptoPrice">
+            ≈ <span class="crypto-amount">0.001</span> SGB
+        </div>
+    </div>
+</div>
+
+<!-- Thêm modal cho thông báo crypto -->
+<div class="modal fade" id="cryptoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thanh toán Cryptocurrency</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <img src="https://raw.githubusercontent.com/MetaMask/brand-resources/master/SVG/metamask-fox.svg" alt="Metamask" style="width: 80px;">
+                </div>
+                <div id="cryptoMessage" class="text-center"></div>
+                <div id="transactionDetails" class="mt-3" style="display: none;">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Số tiền:</span>
+                        <span id="cryptoAmount"></span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Địa chỉ nhận:</span>
+                        <span id="receiverAddress" class="text-truncate" style="max-width: 200px;"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script thanh toán crypto -->
+<script src="/client/js/crypto-payment.js">
+// Cấu hình tỷ giá
+const VND_TO_SGB_RATE = 1000000; // 1,000,000 VND = 1 SGB
+
+// Hàm chuyển đổi VND sang SGB
+function convertVNDtoSGB(vndAmount) {
+    // Công thức: số tiền VND / 1,000,000
+    return (parseInt(vndAmount) / VND_TO_SGB_RATE).toFixed(6);
+}
+
+let web3;
+let userAccount;
+
+async function initWeb3() {
+    if (typeof window.ethereum !== 'undefined') {
+        try {
+            // Yêu cầu kết nối với Metamask
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            
+            // Khởi tạo Web3
+            web3 = new Web3(window.ethereum);
+            
+            // Lấy tài khoản người dùng
+            const accounts = await web3.eth.getAccounts();
+            userAccount = accounts[0];
+
+            // Chuyển sang mạng Coston
+            await switchToCoston();
+            
+            return true;
+        } catch (error) {
+            console.error('Lỗi kết nối Metamask:', error);
+            showCryptoMessage('Lỗi: ' + error.message);
+            return false;
+        }
+    } else {
+        showCryptoMessage('Vui lòng cài đặt Metamask để thanh toán bằng cryptocurrency');
+        return false;
+    }
+}
+
+async function switchToCoston() {
+    try {
+        await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x10' }], // 16 in hex
+        });
+    } catch (switchError) {
+        // Nếu mạng chưa được thêm vào Metamask
+        if (switchError.code === 4902) {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId: '0x10',
+                        chainName: 'Songbird Coston Testnet',
+                        nativeCurrency: {
+                            name: 'Songbird',
+                            symbol: 'SGB',
+                            decimals: 18
+                        },
+                        rpcUrls: ['https://coston-api.flare.network/ext/bc/C/rpc'],
+                        blockExplorerUrls: ['https://coston-explorer.flare.network']
+                    }]
+                });
+            } catch (addError) {
+                throw new Error('Không thể thêm mạng Coston vào Metamask');
+            }
+        }
+    }
+}
+
+function showCryptoMessage(message, showDetails = false) {
+    const modal = new bootstrap.Modal(document.getElementById('cryptoModal'));
+    document.getElementById('cryptoMessage').innerHTML = message;
+    document.getElementById('transactionDetails').style.display = showDetails ? 'block' : 'none';
+    modal.show();
+}
+
+async function purchaseWithCrypto(productId, priceInVND) {
+    try {
+        const connected = await initWeb3();
+        if (!connected) return;
+
+        // Lấy địa chỉ ví admin từ server
+        const response = await fetch('/api/get-admin-wallet');
+        const { adminWallet } = await response.json();
+
+        // Chuyển đổi giá từ VND sang SGB
+        // Giả sử 1 SGB = 300,000 VND
+        // Giá trong database đang lưu dưới dạng số nguyên VND
+        const priceInSGB = (parseInt(priceInVND) / 300000).toFixed(6);
+        const weiValue = web3.utils.toWei(priceInSGB, 'ether');
+
+        // Hiển thị thông tin giao dịch
+        document.getElementById('cryptoAmount').textContent = `${priceInSGB} SGB`;
+        document.getElementById('receiverAddress').textContent = adminWallet;
+        showCryptoMessage('Xác nhận thanh toán:', true);
+
+        // Xử lý khi người dùng xác nhận thanh toán
+        document.getElementById('confirmCryptoPayment').onclick = async () => {
+            try {
+                // Gửi giao dịch
+                const result = await web3.eth.sendTransaction({
+                    from: userAccount,
+                    to: adminWallet,
+                    value: weiValue,
+                    gas: '21000'
+                });
+
+                if (result.status) {
+                    // Gửi thông tin giao dịch lên server
+                    const confirmResponse = await fetch('/api/orders/confirm-crypto-payment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            productId,
+                            transactionHash: result.transactionHash,
+                            amount: priceInSGB,
+                            currency: 'SGB'
+                        })
+                    });
+
+                    const confirmResult = await confirmResponse.json();
+                    if (confirmResult.success) {
+                        showCryptoMessage('Thanh toán thành công! Đơn hàng của bạn đã được xác nhận.');
+                        setTimeout(() => {
+                            window.location.href = '/orders';
+                        }, 2000);
+                    }
+                }
+            } catch (error) {
+                console.error('Lỗi khi thanh toán:', error);
+                showCryptoMessage('Lỗi khi thanh toán: ' + error.message);
+            }
+        };
+    } catch (error) {
+        console.error('Lỗi:', error);
+        showCryptoMessage('Lỗi: ' + error.message);
+    }
+}
+
+// Tính và hiển thị giá crypto khi trang tải
+document.addEventListener('DOMContentLoaded', () => {
+    const productPrice = document.getElementById('product-price').dataset.price;
+    const priceInSGB = convertVNDtoSGB(productPrice);
+    document.querySelector('.crypto-amount').textContent = priceInSGB;
+});
+</script>

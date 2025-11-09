@@ -1,0 +1,89 @@
+<!-- Modal cài đặt MetaMask -->
+<div class="modal fade" id="installMetamaskModal" tabindex="-1" aria-labelledby="installMetamaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="installMetamaskModalLabel">Cài đặt MetaMask</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img src="/client/img/metamask-fox.svg" alt="MetaMask Logo" style="width: 100px; margin-bottom: 20px;">
+                <p>Để thanh toán bằng cryptocurrency, bạn cần cài đặt ví MetaMask.</p>
+                <p>MetaMask là một ví tiền điện tử an toàn và dễ sử dụng.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="installMetamask">
+                    <i class="fas fa-download me-2"></i>Cài đặt MetaMask
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal hướng dẫn chuyển mạng -->
+<div class="modal fade" id="switchNetworkModal" tabindex="-1" aria-labelledby="switchNetworkModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="switchNetworkModalLabel">Chuyển sang mạng Coston Testnet</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Bạn cần chuyển sang mạng Coston Testnet để thực hiện giao dịch
+                </div>
+                <ol class="list-group list-group-numbered mb-3">
+                    <li class="list-group-item">Mở ví MetaMask của bạn</li>
+                    <li class="list-group-item">Nhấp vào nút chuyển mạng ở trên cùng</li>
+                    <li class="list-group-item">Chọn "Coston Testnet" từ danh sách</li>
+                </ol>
+                <p class="small text-muted">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    Nếu bạn không thấy Coston Testnet, hãy nhấp vào nút bên dưới để thêm mạng
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="addCostonNetwork">
+                    <i class="fas fa-plus me-2"></i>Thêm Coston Testnet
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal hiển thị mã QR để nhận testnet tokens -->
+<div class="modal fade" id="getTestTokensModal" tabindex="-1" aria-labelledby="getTestTokensModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="getTestTokensModalLabel">Nhận Testnet Tokens</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="qr-code mb-3">
+                    <!-- QR code sẽ được thêm bằng JavaScript -->
+                </div>
+                <p>Quét mã QR hoặc sao chép địa chỉ ví của bạn:</p>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="userWalletAddress" readonly>
+                    <button class="btn btn-outline-secondary" type="button" id="copyWalletAddress">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Truy cập <a href="https://coston-faucet.towolabs.com" target="_blank" class="alert-link">Coston Faucet</a> để nhận testnet tokens miễn phí
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <a href="https://coston-faucet.towolabs.com" target="_blank" class="btn btn-primary">
+                    <i class="fas fa-external-link-alt me-2"></i>Mở Coston Faucet
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

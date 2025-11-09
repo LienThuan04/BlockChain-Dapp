@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>My Cart - laptopshop</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+    <link rel="icon" type="image/svg+xml" href="/im/Logo-Client.svg">
+
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Raleway:wght@600;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="/client/lib/lightbox/css/lightbox.min.css" rel="stylesheet">
+    <link href="/client/lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="/client/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="/client/css/style.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.css" integrity="sha512-wJgJNTBBkLit7ymC6vvzM1EcSWeM9mmOu+1USHaRBbHkm6W9EgM0HY27+UtUaprntaYQJF75rc8gjxllKs5OIQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+
+<body>
+
+    <!-- Spinner Start -->
+    <div id="spinner"
+        class="show w-100 vh-100 bg-white position-fixed translate-middle top-50 start-50  d-flex align-items-center justify-content-center">
+        <div class="spinner-grow text-primary" role="status"></div>
+    </div>
+    <!-- Spinner End -->
+
+
+    <!-- Navbar start -->
+    <%- include('../layout/header.ejs') -%>
+        <!-- Navbar End -->
+        <div class="py-4"></div>
+
+        <!-- Single Product Start -->
+        <div class="container-fluid page-header py-5">
+            <h1 class="text-center text-white display-6">Giỏ hàng của tôi</h1>
+            <ol class="breadcrumb justify-content-center mb-0">
+                <li class="breadcrumb-item"><a href="/">Home</a></li>
+                <li class="breadcrumb-item"><a href="/cart">Giỏ hàng</a></li>
+                <li class="breadcrumb-item active text-white">Thanh toán</li>
+            </ol>
+        </div>
+        <!-- Single Page Header End -->
+
+
+        <!-- Cart Page Start -->
+        <div class="container-fluid py-5">
+            <div class="container py-5">
+                <div class="table-responsive">
+                    <table class="table text-center">
+                        <thead>
+                            <tr>
+                                <th scope="col">Sản phẩm</th>
+                                <th scope="col">Tên</th>
+                                <th scope="col">Cấu hình</th>
+                                <th scope="col">Giá</th>
+                                <th scope="col">Số lượng</th>
+                                <th scope="col">Tổng cộng</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (cartDetails && cartDetails.length > 0 && cartDetails.some(item => item.isSelected)) { %>
+                                <% cartDetails.forEach(function(item) { %>
+                                    <% if (item.isSelected) { %>
+                                    <tr class="detailCartId:<%= item.id %>">
+                                        <th scope="row">
+                                            <div class="d-flex align-items-center justify-content-center">
+                                                <img src="<%= item.product.image ? '/images/products/' + item.product.image : '/client/img/default-product.png' %>"
+                                                    class="img-fluid me-5 rounded-circle"
+                                                    style="width: 80px; height: 80px; min-width: 50px; min-height: 50px;"
+                                                    alt="image product <%= item.product.name %>">
+                                            </div>
+                                        </th>
+                                        <td>
+                                            <p class="mb-0 mt-4 text-primary">
+                                                <a href="/product/<%= item.product.id %>"
+                                                    class="text-decoration-none fw-bold">
+                                                    <%= item.product.name %>
+                                                </a>
+                                            </p>
+                                        </td>
+                                        <td>
+                                            <% if (item.product.productVariants && item.product.productVariants.length > 0) { %>
+                                                <% const selectedVariant = item.product.productVariants.find(v => v.id == item.productVariantId) || item.product.productVariants[0]; %>
+                                                <div class="d-flex justify-content-center align-items-center mt-4 w-100">
+                                                    <span class="badge bg-info text-dark fs-5 px-4 py-2" style="font-size: 1.15rem !important;">
+                                                        <%= selectedVariant.cpu %> | <%= selectedVariant.memory %> | <%= selectedVariant.color %>
+                                                    </span>
+                                                </div>
+                                            <% } else { %>
+                                                <span class="text-muted">Không có</span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <p class="mb-0 mt-4 text-warning">
+                                                <% 
+                                                    let variantPrice = 0;
+                                                    if (item.product.productVariants && item.product.productVariants.length > 0) {
+                                                        const selectedVariant = item.product.productVariants.find(v => v.id == item.productVariantId) || item.product.productVariants[0];
+                                                        variantPrice = Number(selectedVariant && selectedVariant.priceMore ? selectedVariant.priceMore : 0);
+                                                    }
+                                                    const totalUnitPrice = Number(item.product.price) + variantPrice;
+                                                %>
+                                                <%= totalUnitPrice.toLocaleString('vi-VN') %> VND
+                                            </p>
+                                        </td>
+                                        <td>
+                                            <div class="input-group quantity mt-4 d-flex align-items-center"
+                                                style="width: auto;">
+                                                <input type="number" name="quantityProduct" min="1"
+                                                    max="<%= item.product.quantity %>"
+                                                    class="form-control form-control-sm text-center border-0"
+                                                    value="<%= item.quantityProduct %>"
+                                                    style="width: 15px; min-width: 15px;"
+                                                    data-InputCartDetail-id="<%= item.id %>"
+                                                    data-InputCartDetail-price="<%= item.product.price %>" disabled>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <p class="mb-0 mt-4 text-danger" data-OutPutCartDetail-id="<%= item.id %>">
+                                                <%
+                                                    var totalLineRow = (Number(item.product.price) + variantPrice) * item.quantityProduct;
+                                                %>
+                                                <%= totalLineRow.toLocaleString('vi-VN') %> VND
+                                            </p>
+                                        </td>
+                                    </tr>
+                                    <% } %>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="6" class="text-center">Giỏ hàng trống</td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+                <% if (cartDetails && cartDetails.length> 0) { %>
+                    <form action="/place-order" method="POST">
+                        <div class="mt-5 row g-4 justify-content-end">
+                            <div class="col-12 col-md-6">
+                                <div
+                                    class="bg-light rounded shadow-sm h-100 p-4 d-flex flex-column justify-content-center">
+                                    <h4 class="mb-4 text-center text-uppercase fw-bold text-primary">Thông tin người
+                                        nhận</h4>
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label for="receiverName" class="form-label">Họ và tên người nhận</label>
+                                            <input type="text" class="form-control" id="receiverName"
+                                                name="receiverName" required placeholder="Nhập họ và tên" required>
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="receiverPhone" class="form-label">Số điện thoại</label>
+                                            <input type="tel" class="form-control" id="receiverPhone"
+                                                name="receiverPhone" required placeholder="Nhập số điện thoại" required>
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="receiverAddress" class="form-label">Địa chỉ nhận hàng</label>
+                                            <input type="text" class="form-control" id="receiverAddress"
+                                                name="receiverAddress" required placeholder="Nhập địa chỉ" required>
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="receiverEmail" class="form-label">Email (nếu có)</label>
+                                            <input type="email" class="form-control" id="receiverEmail"
+                                                name="receiverEmail" placeholder="Nhập email">
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="receiverNote" class="form-label">Ghi chú</label>
+                                            <textarea class="form-control" id="receiverNote" name="receiverNote"
+                                                rows="2" placeholder="Ghi chú thêm (nếu có)"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-center mt-4">
+                                        <a href="/cart"
+                                            class="btn btn-outline-primary rounded-pill px-4 py-2 text-uppercase">
+                                            <i class="bi bi-arrow-left"></i> Quay lại giỏ hàng
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <div class="bg-light rounded shadow-sm h-100 p-4">
+                                    <h4 class="mb-4 text-center text-uppercase fw-bold text-primary">Thông tin thanh
+                                        toán</h4>
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="fw-bold">Tạm tính:</span>
+                                            <span class="text-primary fw-bold" data-TotalPrice="<%= TotalPrice %>">
+                                                <%= TotalPrice.toLocaleString('vi-VN') %> VND
+                                            </span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="fw-bold">Phí vận chuyển:</span>
+                                            <span>
+                                                <%= (TotalPrice> 0 ? 30000 : 0).toLocaleString('vi-VN') %> VND / 1KM
+                                            </span>
+                                        </div>
+                                        <div
+                                            class="d-flex justify-content-between align-items-center border-top pt-3 mt-3">
+                                            <span class="fs-5 fw-bold text-danger">Tổng cộng:</span>
+                                            <span class="fs-5 fw-bold text-danger"
+                                                data-TotalPriceTT="<%= TotalPrice %>">
+                                                <%= (TotalPrice + (TotalPrice> 0 ? 30000 : 0)).toLocaleString('vi-VN')
+                                                    %> VND
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="fw-bold mb-2">Hình thức thanh toán</label>
+                                        <div class="list-group">
+                                            <label
+                                                class="list-group-item d-flex align-items-center justify-content-between">
+                                                <span>
+                                                    <input class="form-check-input me-2" type="radio"
+                                                        name="paymentMethod" value="COD" checked>
+                                                    <i class="fas fa-truck text-warning me-2"></i>
+                                                    Thanh toán khi nhận hàng
+                                                </span>
+                                            </label>
+                                            <label
+                                                class="list-group-item d-flex align-items-center justify-content-between">
+                                                <span>
+                                                    <input class="form-check-input me-2" type="radio"
+                                                        name="paymentMethod" value="BANK">
+                                                    <i class="fas fa-university text-primary me-2"></i>
+                                                    Thanh toán bằng ngân hàng
+                                                </span>
+                                            </label>
+                                            <label
+                                                class="list-group-item d-flex align-items-center justify-content-between">
+                                                <span>
+                                                    <input class="form-check-input me-2" type="radio"
+                                                        name="paymentMethod" value="TRANSFER">
+                                                    <i class="fas fa-exchange-alt text-success me-2"></i>
+                                                    Chuyển khoản
+                                                </span>
+                                            </label>
+                                            <label
+                                                class="list-group-item d-flex align-items-center justify-content-between">
+                                                <span>
+                                                    <input class="form-check-input me-2" type="radio"
+                                                        name="paymentMethod" value="PAYPAL">
+                                                    <img src="https://www.paypalobjects.com/webstatic/icon/pp258.png"
+                                                        alt="PayPal"
+                                                        style="height:24px;vertical-align:middle;margin-right:6px;">
+                                                    Thanh toán qua PayPal
+                                                </span>
+                                            </label>
+                                            <label
+                                                class="list-group-item d-flex align-items-center justify-content-between">
+                                                <span>
+                                                    <input class="form-check-input me-2" type="radio"
+                                                        name="paymentMethod" value="CRYPTO">
+                                                    <i class="fab fa-bitcoin text-warning me-2"></i>
+                                                    Thanh toán bằng tiền ảo (MetaMask)
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="totalPrice" value="<%= TotalPrice + 30000 %>">
+                                    <% if (cartDetails && cartDetails.length > 0 && cartDetails.some(item => item.isSelected)) { %>
+                                        <% cartDetails.forEach(function(item, index) { %>
+                                            <% if (item.isSelected) { %>
+                                                <input type="hidden" name="ListIdDetailCartPay[<%= index %>][id]" value="<%= item.id %>">
+                                                <input type="hidden" name="ListIdDetailCartPay[<%= index %>][productVariantId]" value="<%= item.selectedVariantId %>">
+                                            <% } %>
+                                        <% }); %>
+                                    <% } %>
+                                    <button class="btn btn-primary rounded-pill px-4 py-3 text-uppercase w-100 mt-3"
+                                        type="submit" id="btnCheckoutPay">Tiến hành thanh toán
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    <% } else{ %>
+                        <div class="alert alert-warning" role="alert">
+                            Bạn chưa chọn sản phẩm nào để thanh toán.
+                        </div>
+                        <% } %>
+            </div>
+        </div>
+
+        <!-- Footer Start -->
+        <%- include('../layout/footer.ejs') -%>
+            <!-- Footer End -->
+
+
+
+
+            <!-- Back to Top -->
+            <a href="#" class="btn btn-primary border-3 border-primary rounded-circle back-to-top"><i
+                    class="fa fa-arrow-up"></i></a>
+
+
+            <!-- JavaScript Libraries -->
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+            <script src="/client/lib/easing/easing.min.js"></script>
+            <script src="/client/lib/waypoints/waypoints.min.js"></script>
+            <script src="/client/lib/lightbox/js/lightbox.min.js"></script>
+            <script src="/client/lib/owlcarousel/owl.carousel.min.js"></script>
+
+            <!-- Template Javascript -->
+            <script src="/client/js/main.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.js" integrity="sha512-zlWWyZq71UMApAjih4WkaRpikgY9Bz1oXIW5G0fED4vk14JjGlQ1UmkGM392jEULP8jbNMiwLWdM8Z87Hu88Fw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            <!-- Web3 Library for Crypto Payment -->
+            <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+            
+            <script>
+                // Handle checkout form submission with payment method
+                document.getElementById('btnCheckoutPay').addEventListener('click', function(e) {
+                    const selectedPaymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+                    
+                    if (selectedPaymentMethod === 'CRYPTO') {
+                        e.preventDefault();
+                        
+                        // Get form data
+                        const form = document.querySelector('form[action="/place-order"]');
+                        const formData = new FormData(form);
+                        
+                        // Get receiver information
+                        const receiverName = document.getElementById('receiverName').value;
+                        const receiverPhone = document.getElementById('receiverPhone').value;
+                        const receiverAddress = document.getElementById('receiverAddress').value;
+                        const receiverEmail = document.getElementById('receiverEmail').value;
+                        const receiverNote = document.getElementById('receiverNote').value;
+                        const totalPrice = parseFloat(document.querySelector('input[name="totalPrice"]').value);
+                        
+                        // Validate receiver information
+                        if (!receiverName || !receiverPhone || !receiverAddress) {
+                            $.toast({
+                                heading: 'Lỗi',
+                                text: 'Vui lòng điền đầy đủ thông tin người nhận',
+                                showHideTransition: 'fade',
+                                icon: 'error',
+                                position: 'top-right'
+                            });
+                            return;
+                        }
+                        
+                        // Prepare cart items data
+                        const cartItems = [];
+                        form.querySelectorAll('input[name^="ListIdDetailCartPay"]').forEach(input => {
+                            const match = input.name.match(/ListIdDetailCartPay\[(\d+)\]\[(\w+)\]/);
+                            if (match) {
+                                const index = match[1];
+                                const field = match[2];
+                                if (!cartItems[index]) cartItems[index] = {};
+                                cartItems[index][field] = input.value;
+                            }
+                        });
+                        
+                        // Store checkout data in sessionStorage for crypto payment
+                        sessionStorage.setItem('checkoutData', JSON.stringify({
+                            receiverName: receiverName,
+                            receiverPhone: receiverPhone,
+                            receiverAddress: receiverAddress,
+                            receiverEmail: receiverEmail,
+                            receiverNote: receiverNote,
+                            totalPrice: totalPrice,
+                            paymentMethod: 'CRYPTO',
+                            cartItems: cartItems.filter(Boolean)
+                        }));
+                        
+                        // Initiate crypto payment
+                        handleCryptoCheckoutPayment(totalPrice);
+                    }
+                });
+                
+                // Handle crypto payment from checkout
+                async function handleCryptoCheckoutPayment(totalAmount) {
+                    try {
+                        // Check MetaMask
+                        if (!window.ethereum) {
+                            $.toast({
+                                heading: 'Lỗi',
+                                text: 'Vui lòng cài đặt MetaMask',
+                                showHideTransition: 'fade',
+                                icon: 'error',
+                                position: 'top-right'
+                            });
+                            return;
+                        }
+                        
+                        // Initialize Web3 directly
+                        if (!window.web3) {
+                            window.web3 = new Web3(window.ethereum);
+                        }
+                        
+                        // Get current account using MetaMask directly
+                        let accounts;
+                        try {
+                            accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                        } catch (err) {
+                            console.error('Error getting accounts:', err);
+                            accounts = [];
+                        }
+                        
+                        if (!accounts || accounts.length === 0) {
+                            $.toast({
+                                heading: 'Lỗi',
+                                text: 'Vui lòng kết nối ví MetaMask',
+                                showHideTransition: 'fade',
+                                icon: 'error',
+                                position: 'top-right'
+                            });
+                            return;
+                        }
+                        
+                        // Switch to Coston network
+                        try {
+                            await window.ethereum.request({
+                                method: 'wallet_switchEthereumChain',
+                                params: [{ chainId: '0x10' }]
+                            });
+                        } catch (switchError) {
+                            // If network doesn't exist, add it
+                            if (switchError.code === 4902) {
+                                try {
+                                    await window.ethereum.request({
+                                        method: 'wallet_addEthereumChain',
+                                        params: [{
+                                            chainId: '0x10',
+                                            chainName: 'Coston Testnet',
+                                            rpcUrls: ['https://coston-api.flare.network/ext/bc/C/rpc'],
+                                            nativeCurrency: {
+                                                name: 'SGB',
+                                                symbol: 'SGB',
+                                                decimals: 18
+                                            },
+                                            blockExplorerUrls: ['https://coston-explorer.flare.network/']
+                                        }]
+                                    });
+                                } catch (addError) {
+                                    throw new Error('Không thể thêm Coston Testnet');
+                                }
+                            } else {
+                                throw switchError;
+                            }
+                        }
+                        
+                        // Get admin wallet
+                        const adminWalletResponse = await fetch('/api/get-admin-wallet');
+                        if (!adminWalletResponse.ok) {
+                            throw new Error('Không thể lấy thông tin ví admin');
+                        }
+                        
+                        const adminWalletData = await adminWalletResponse.json();
+                        const adminWallet = adminWalletData.adminWallet || adminWalletData.wallet;
+                        
+                        // Convert VND to SGB (1 SGB ≈ 300,000 VND - adjust as needed)
+                        const sgbAmount = (totalAmount / 300000).toFixed(4);
+                        
+                        // Show payment details modal
+                        showCryptoCheckoutPaymentDetails(
+                            accounts[0],
+                            adminWallet,
+                            sgbAmount,
+                            totalAmount
+                        );
+                        
+                    } catch (error) {
+                        console.error('Lỗi:', error);
+                        $.toast({
+                            heading: 'Lỗi',
+                            text: error.message || 'Có lỗi xảy ra khi khởi tạo thanh toán',
+                            showHideTransition: 'fade',
+                            icon: 'error',
+                            position: 'top-right'
+                        });
+                    }
+                }
+                
+                // Show payment details for checkout
+                function showCryptoCheckoutPaymentDetails(senderAddress, receiverAddress, sgbAmount, vndAmount) {
+                    const checkoutData = JSON.parse(sessionStorage.getItem('checkoutData'));
+                    
+                    const modalHTML = `
+                        <div class="modal fade" id="cryptoCheckoutModal" tabindex="-1" aria-labelledby="cryptoCheckoutModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-body p-5">
+                                        <h5 class="modal-title text-center mb-4 text-primary fw-bold">Xác nhận Thanh toán Tiền ảo</h5>
+                                        
+                                        <div class="payment-details mb-4">
+                                            <div class="alert alert-light border-1">
+                                                <div class="row mb-3">
+                                                    <div class="col-6">
+                                                        <span class="text-muted">Người gửi:</span>
+                                                    </div>
+                                                    <div class="col-6 text-end">
+                                                        <small class="text-break">${senderAddress}</small>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-6">
+                                                        <span class="text-muted">Người nhận:</span>
+                                                    </div>
+                                                    <div class="col-6 text-end">
+                                                        <small class="text-break">${receiverAddress}</small>
+                                                    </div>
+                                                </div>
+                                                <hr class="my-2">
+                                                <div class="row mb-3">
+                                                    <div class="col-6">
+                                                        <span class="fw-bold">Số tiền (SGB):</span>
+                                                    </div>
+                                                    <div class="col-6 text-end">
+                                                        <span class="fw-bold text-success">${sgbAmount} SGB</span>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-6">
+                                                        <span class="fw-bold">Tương đương (VND):</span>
+                                                    </div>
+                                                    <div class="col-6 text-end">
+                                                        <span class="fw-bold text-danger">${vndAmount.toLocaleString('vi-VN')} VND</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="recipient-info mb-4">
+                                            <h6 class="mb-3 fw-bold">Thông tin người nhận:</h6>
+                                            <div class="alert alert-light border-1 p-3">
+                                                <p class="mb-2"><strong>Tên:</strong> ${checkoutData.receiverName}</p>
+                                                <p class="mb-2"><strong>Điện thoại:</strong> ${checkoutData.receiverPhone}</p>
+                                                <p class="mb-2"><strong>Địa chỉ:</strong> ${checkoutData.receiverAddress}</p>
+                                                ${checkoutData.receiverEmail ? `<p class="mb-0"><strong>Email:</strong> ${checkoutData.receiverEmail}</p>` : ''}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-primary btn-lg" id="confirmCryptoPayment">
+                                                <i class="fas fa-check-circle"></i> Xác nhận thanh toán
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-lg" data-bs-dismiss="modal">
+                                                Huỷ bỏ
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Remove old modal if exists
+                    const existingModal = document.getElementById('cryptoCheckoutModal');
+                    if (existingModal) {
+                        existingModal.remove();
+                    }
+                    
+                    document.body.insertAdjacentHTML('beforeend', modalHTML);
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('cryptoCheckoutModal'));
+                    modal.show();
+                    
+                    // Handle confirm payment button
+                    document.getElementById('confirmCryptoPayment').addEventListener('click', async function() {
+                        await processCryptoCheckoutPayment(senderAddress, receiverAddress, sgbAmount, vndAmount);
+                        modal.hide();
+                    });
+                }
+                
+                // Process crypto checkout payment
+                async function processCryptoCheckoutPayment(senderAddress, receiverAddress, sgbAmount, vndAmount) {
+                    try {
+                        const checkoutData = JSON.parse(sessionStorage.getItem('checkoutData'));
+                        
+                        // Check if web3 is initialized
+                        if (!window.web3) {
+                            window.web3 = new Web3(window.ethereum);
+                        }
+                        
+                        // Show loading
+                        $.toast({
+                            heading: 'Đang xử lý',
+                            text: 'Vui lòng xác nhận giao dịch trên MetaMask...',
+                            showHideTransition: 'fade',
+                            icon: 'info',
+                            position: 'top-right'
+                        });
+                        
+                        // Send transaction
+                        let txHash;
+                        try {
+                            // Convert SGB to Wei (1 SGB = 10^18 Wei)
+                            const weiAmount = (parseFloat(sgbAmount) * 1e18).toString();
+                            
+                            console.log('Sending transaction:', {
+                                from: senderAddress,
+                                to: receiverAddress,
+                                value: weiAmount,
+                                sgbAmount: sgbAmount
+                            });
+                            
+                            txHash = await window.ethereum.request({
+                                method: 'eth_sendTransaction',
+                                params: [{
+                                    from: senderAddress,
+                                    to: receiverAddress,
+                                    value: '0x' + parseInt(weiAmount).toString(16)
+                                }]
+                            });
+                        } catch (txError) {
+                            if (txError.code === 4001) {
+                                throw new Error('Bạn đã từ chối giao dịch trên MetaMask');
+                            } else if (txError.message.includes('insufficient funds')) {
+                                throw new Error('Số dư không đủ để thanh toán');
+                            } else {
+                                throw new Error('Lỗi gửi giao dịch: ' + txError.message);
+                            }
+                        }
+                        
+                        if (!txHash) {
+                            throw new Error('Không nhận được transaction hash');
+                        }
+                        
+                        // Show success
+                        $.toast({
+                            heading: 'Thành công',
+                            text: 'Giao dịch được gửi thành công!',
+                            showHideTransition: 'fade',
+                            icon: 'success',
+                            position: 'top-right'
+                        });
+                        
+                        // Confirm payment with server
+                        const confirmResponse = await fetch('/api/orders/confirm-crypto-payment', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                transactionHash: txHash,
+                                senderAddress: senderAddress,
+                                receiverAddress: receiverAddress,
+                                amount: sgbAmount,
+                                vndAmount: vndAmount,
+                                paymentMethod: 'CRYPTO',
+                                receiverName: checkoutData.receiverName,
+                                receiverPhone: checkoutData.receiverPhone,
+                                receiverAddress: checkoutData.receiverAddress,
+                                receiverEmail: checkoutData.receiverEmail,
+                                receiverNote: checkoutData.receiverNote,
+                                cartItems: checkoutData.cartItems
+                            })
+                        });
+                        
+                        if (confirmResponse.ok) {
+                            const result = await confirmResponse.json();
+                            $.toast({
+                                heading: 'Thành công',
+                                text: 'Đơn hàng được tạo thành công!',
+                                showHideTransition: 'fade',
+                                icon: 'success',
+                                position: 'top-right'
+                            });
+                            
+                            // Clear session storage
+                            sessionStorage.removeItem('checkoutData');
+                            
+                            // Redirect to order history
+                            setTimeout(() => {
+                                window.location.href = '/order-history';
+                            }, 2000);
+                        } else {
+                            throw new Error('Không thể tạo đơn hàng');
+                        }
+                        
+                    } catch (error) {
+                        console.error('Lỗi:', error);
+                        $.toast({
+                            heading: 'Lỗi',
+                            text: error.message || 'Có lỗi xảy ra khi xử lý thanh toán',
+                            showHideTransition: 'fade',
+                            icon: 'error',
+                            position: 'top-right'
+                        });
+                    }
+                }
+            </script>
+</body>
+
+</html>

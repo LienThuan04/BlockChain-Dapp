@@ -1,0 +1,135 @@
+<div class="container-fluid fixed-top">
+    <div class="container topbar bg-primary d-none d-lg-block">
+        <div class="d-flex justify-content-between">
+            <div class="top-info ps-2">
+                <% if (user) { %>
+                    <small class="me-3"><i class="fas fa-map-marker-alt me-2 text-dark"></i> <a href="#"
+                            class="text-white">
+                            <%= user?.address ? user.address : 'Địa chỉ của bạn' %>
+                        </a></small>
+                    <small class="me-3"><i class="fas fa-envelope me-2 text-dark"></i><a href="#" class="text-white">
+                            <%= user?.email ? user.email : 'Your email' %>
+                        </a></small>
+                    <% if (user?.role?.name === 'ADMIN') { %>
+                        <small class="me-3"><i class="bi bi-speedometer text-dark"></i><a href="/admin/" class="text-white">
+                                Page Admin
+                            </a></small>
+                        <% } %>
+                            <% } else { %>
+                                <small class="me-3"><i class="fas fa-info-circle me-2 text-dark"></i></small>
+                                <% } %>
+
+            </div>
+            <div class="top-link pe-2">
+                <a href="#" class="text-white"><small class="text-whitemx-2">Điều khoản sử dụng </small>/</a>
+                <a href="#" class="text-white"><small class="text-white mx-2">Dịch vụ</small>/</a>
+                <a href="#" class="text-white"><small class="text-white ms-2">Hỗ trợ</small></a>
+            </div>
+        </div>
+    </div>
+    <div class="container px-0">
+        <nav class="navbar navbar-light bg-white navbar-expand-xl">
+            <a href="/" class="navbar-brand">
+                <h1 class="text-primary display-6">LianHarman</h1>
+            </a>
+            <button class="navbar-toggler py-2 px-3" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarCollapse">
+                <span class="fa fa-bars text-primary"></span>
+            </button>
+            <div class="collapse navbar-collapse bg-white" id="navbarCollapse">
+                <div class="navbar-nav mx-auto">
+                    <a href="/" class="nav-item nav-link active">Trang chủ</a>
+                    <a href="/products" class="nav-item nav-link">Sản phẩm</a>
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Loại sản phẩm</a>
+                        <div class="dropdown-menu m-0 bg-light rounded-0">
+                            <% if (targets && targets.length > 0) { %>
+                                <% targets.forEach(target => { %>
+                                    <a href="/products?Page=0&sort=gia-khong-sap-xep&target=<%= target.name %>&factory=&priceRange=" class="dropdown-item"><%= target.name %></a>
+                                <% }); %>
+                            <% } %>
+                            <!-- <a href="testimonial.html" class="dropdown-item">Testimonial</a> -->
+                            <!-- <a href="404.html" class="dropdown-item">404 Page</a> -->
+                        </div>
+                    </div>
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Thương hiệu</a>
+                        <div class="dropdown-menu m-0 bg-light rounded-0">
+                            <% if (factories && factories.length > 0) { %>
+                                <% factories.forEach(factory => { %>
+                                    <a href="/products?Page=0&sort=gia-khong-sap-xep&factory=<%= factory.name %>&target=&priceRange=" class="dropdown-item"><%= factory.name %></a>
+                                <% }); %>
+                            <% } %>
+                            <!-- <a href="testimonial.html" class="dropdown-item">Testimonial</a> -->
+                            <!-- <a href="404.html" class="dropdown-item">404 Page</a> -->
+                        </div>
+                    </div>
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Trang</a>
+                        <div class="dropdown-menu m-0 bg-light rounded-0">
+                            <a href="/cart" class="dropdown-item">Giỏ hàng</a>
+                            <a href="/checkout" class="dropdown-item">Thanh toán</a>
+                            <% if (user) { %>
+                                <a href="/My-Account" class="dropdown-item">Quản lý tài khoản</a>
+                                <a href="/order-history" class="dropdown-item">Lịch sử mua hàng</a>                                
+                                <% } else { %>
+                                    <a href="/login" class="dropdown-item">Đăng nhập</a>
+                                    <% } %>
+                        </div>
+                    </div>
+                    <a href="#" class="nav-item nav-link">Liên hệ hỗ trợ</a>
+                </div>
+                <div class="d-flex m-3 me-0">
+                    <!-- <button class="btn-search btn border border-secondary btn-md-square rounded-circle bg-white me-4"
+                        data-bs-toggle="modal" data-bs-target="#searchModal"><i
+                            class="fas fa-search text-primary"></i></button> -->
+                    <a href="/cart" class="position-relative me-4 my-auto">
+                        <i class="fa fa-shopping-bag fa-2x"></i>
+                        <span
+                            class="position-absolute bg-warning rounded-circle d-flex align-items-center justify-content-center text-white px-1"
+                            style="top: -5px; left: 15px; height: 25px; min-width: 25px;" id="cart-count">
+                            <%= user?.quantityCart ? (user.quantityCart > 99 ? '99+' : user.quantityCart) : 0 %>
+                        </span>
+                    </a>
+                    <% if (user) { %>
+                        <div class="dropdown my-auto">
+                            <a href="#" class="dropdown" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown"
+                                aria-expanded="false" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user fa-2x"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end p-4" aria-labelledby="dropdownMenuLink">
+                                <li class="d-flex align-items-center flex-column "
+                                    style="min-width: 300px; width: 100%;">
+                                    <img style="width: 150px; height: 150px; border-radius: 50%; overflow: hidden;"
+                                        src="/images/avatars/<%= user?.avatar ? user?.avatar : 'default-avatar.jpg' %>" onclick="window.location.href='/My-Account'"/>
+                                    <div class="text-center my-3">
+                                        <h5 class="text-primary mb-0">
+                                            <%= user?.fullName ? user?.fullName : 'Guest' %>
+                                        </h5>
+                                        <small class="text-secondary">
+                                            <%= user?.email ? user.email : 'Please login' %>
+                                        </small>
+                                    </div>
+                                </li>
+                                <li><a class="dropdown-item" href="/My-Account"><i class="fas fa-user-cog"></i> Quản lý tài khoản</a></li>
+                                <li><a class="dropdown-item" href="/order-history"><i class="fas fa-history"></i> Lịch sử mua hàng</a></li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li>
+                                    <form method="post" action="/logout">
+                                        <button class="dropdown-item"> <i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                        <% } else { %>
+                            <a href="/login" class="dropdown my-auto a-login">
+                                <i class="fas fa-user fa-2x"></i>
+                            </a>
+                            <% } %>
+                </div>
+            </div>
+        </nav>
+    </div>
+</div>

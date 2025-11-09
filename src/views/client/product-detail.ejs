@@ -1,0 +1,170 @@
+<%- include('../inc/header') %>
+<style>
+    #cryptoModal .modal-header {
+        display: none !important;
+    }
+    #cryptoModal .modal-footer {
+        display: none !important;
+    }
+</style>
+<!-- Trong phần payment methods, thêm nút thanh toán crypto -->
+<div class="payment-methods">
+    <!-- Các phương thức thanh toán hiện tại -->
+    
+    <!-- Thêm nút thanh toán crypto -->
+    <button type="button" class="btn btn-primary crypto-payment-btn" 
+        data-product-id="<%= product.id %>" 
+        data-price="<%= product.price %>">
+        <img src="/client/img/metamask-logo.png" alt="Metamask" style="width: 30px; margin-right: 10px;"/> 
+        Thanh toán bằng Crypto (<span class="crypto-amount">loading...</span> SGB)
+    </button>
+</div>
+
+<!-- Thêm modal thông báo -->
+<div class="modal fade" id="cryptoModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div id="cryptoMessage"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal cài đặt MetaMask -->
+<div class="modal fade" id="installMetamaskModal" tabindex="-1" aria-labelledby="installMetamaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="installMetamaskModalLabel">Cài đặt MetaMask</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-wallet fa-3x text-warning"></i>
+                </div>
+                <p>Để thanh toán bằng cryptocurrency, bạn cần cài đặt ví MetaMask.</p>
+                <p>MetaMask là một ví tiền điện tử an toàn và dễ sử dụng.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="installMetamask">
+                    <i class="fas fa-download me-2"></i>Cài đặt MetaMask
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal hướng dẫn chuyển mạng -->
+<div class="modal fade" id="switchNetworkModal" tabindex="-1" aria-labelledby="switchNetworkModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="switchNetworkModalLabel">Chuyển sang mạng Coston Testnet</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Bạn cần chuyển sang mạng Coston Testnet để thực hiện giao dịch
+                </div>
+                <ol class="list-group list-group-numbered mb-3">
+                    <li class="list-group-item">Mở ví MetaMask của bạn</li>
+                    <li class="list-group-item">Nhấp vào nút chuyển mạng ở trên cùng</li>
+                    <li class="list-group-item">Chọn "Coston Testnet" từ danh sách</li>
+                </ol>
+                <p class="small text-muted">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    Nếu bạn không thấy Coston Testnet, hãy nhấp vào nút bên dưới để thêm mạng
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="addCostonNetwork">
+                    <i class="fas fa-plus me-2"></i>Thêm Coston Testnet
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts for Crypto Payment -->
+<script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/client/js/crypto-payment.js"></script>
+
+<!-- Initialize crypto payment -->
+<script>
+// Đợi tất cả các script load xong
+window.addEventListener('load', async function() {
+    console.log('Page loaded, initializing crypto payment...');
+    
+    try {
+        // Khởi tạo nút cài đặt MetaMask
+        const installMetamaskBtn = document.getElementById('installMetamask');
+        if (installMetamaskBtn) {
+            installMetamaskBtn.addEventListener('click', () => {
+                window.open('https://metamask.io/download/', '_blank');
+            });
+        }
+
+        // Khởi tạo nút thêm mạng Coston
+        const addCostonBtn = document.getElementById('addCostonNetwork');
+        if (addCostonBtn) {
+            addCostonBtn.addEventListener('click', async function() {
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: '0x10',
+                            chainName: 'Songbird Coston Testnet',
+                            nativeCurrency: {
+                                name: 'Songbird',
+                                symbol: 'SGB',
+                                decimals: 18
+                            },
+                            rpcUrls: ['https://coston-api.flare.network/ext/bc/C/rpc'],
+                            blockExplorerUrls: ['https://coston-explorer.flare.network']
+                        }]
+                    });
+                    bootstrap.Modal.getInstance(document.getElementById('switchNetworkModal')).hide();
+                } catch (error) {
+                    console.error('Lỗi khi thêm mạng:', error);
+                    alert('Không thể thêm mạng. Vui lòng thử lại sau.');
+                }
+            });
+        }
+        
+        // Lấy giá sản phẩm để hiển thị giá crypto
+        const cryptoButton = document.querySelector('.crypto-payment-btn');
+        if (cryptoButton) {
+            console.log('Found crypto button:', cryptoButton);
+            
+            const priceInVND = cryptoButton.dataset.price;
+            console.log('Price in VND:', priceInVND);
+            
+            const priceInSGB = convertVNDtoSGB(priceInVND);
+            console.log('Price in SGB:', priceInSGB);
+            
+            document.querySelector('.crypto-amount').textContent = priceInSGB;
+
+            // Thêm event listener cho nút thanh toán
+            cryptoButton.addEventListener('click', async function(e) {
+                e.preventDefault();
+                console.log('Crypto button clicked');
+                await purchaseWithCrypto(this.dataset.productId, this.dataset.price);
+            });
+            
+            console.log('Crypto payment initialized successfully');
+        } else {
+            console.error('Crypto button not found');
+        }
+    } catch (error) {
+        console.error('Error initializing crypto payment:', error);
+    }
+});
+</script>
+
+<%- include('../inc/footer') %>
