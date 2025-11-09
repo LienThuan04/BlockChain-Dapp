@@ -60,11 +60,19 @@ const PostAdminCreateProduct = async (req: Request, res: Response) => {
 
 const DelProduct = async(req: Request, res: Response) => {
     const {id} = req.params;
-    const DelProduct = await PostDelProduct(Number(id));
-    if(DelProduct){
-        return res.redirect('/admin/product')
-    } else{
-        return console.log("error:",DelProduct)
+    const result = await PostDelProduct(Number(id));
+    
+    if (result.success) {
+        // Product deleted successfully
+        return res.redirect('/admin/product?success=product_deleted');
+    } else if (result.error) {
+        // Product cannot be deleted due to related data
+        const encodedError = encodeURIComponent(result.error);
+        const stepsJson = encodeURIComponent(JSON.stringify(result.remainingSteps || []));
+        return res.redirect(`/admin/product?error=delete_failed&message=${encodedError}&steps=${stepsJson}`);
+    } else {
+        // Other error
+        return res.redirect('/admin/product?error=unknown_error');
     }
 };
 

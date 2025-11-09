@@ -40,18 +40,78 @@
                                     class="card-header bg-info text-white d-flex align-items-center justify-content-between">
                                     <h5 class="mb-0"><i class="fa-solid fa-list"></i> Order List</h5>
                                 </div>
+                                
+                                <!-- Filter Form -->
+                                <div class="card-body bg-light border-bottom">
+                                    <form method="GET" action="/admin/order" class="row g-3">
+                                        <!-- Search User -->
+                                        <div class="col-md-3">
+                                            <label for="searchUser" class="form-label"><i class="fas fa-search"></i> Search Customer</label>
+                                            <input type="text" class="form-control" id="searchUser" name="searchUser" 
+                                                placeholder="Name or email..." value="<%= filters?.searchUser || '' %>">
+                                        </div>
+                                        
+                                        <!-- Filter Status -->
+                                        <div class="col-md-2">
+                                            <label for="status" class="form-label"><i class="fas fa-tag"></i> Order Status</label>
+                                            <select class="form-select" id="status" name="status">
+                                                <option value="">All</option>
+                                                <option value="PENDING" <%= filters?.status === 'PENDING' ? 'selected' : '' %>>Pending</option>
+                                                <option value="PROCESSING" <%= filters?.status === 'PROCESSING' ? 'selected' : '' %>>Processing</option>
+                                                <option value="CONFIRMED" <%= filters?.status === 'CONFIRMED' ? 'selected' : '' %>>Confirmed</option>
+                                                <option value="PACKED" <%= filters?.status === 'PACKED' ? 'selected' : '' %>>Packed</option>
+                                                <option value="SHIPPED" <%= filters?.status === 'SHIPPED' ? 'selected' : '' %>>Shipped</option>
+                                                <option value="DELIVERED" <%= filters?.status === 'DELIVERED' ? 'selected' : '' %>>Delivered</option>
+                                                <option value="CANCELLED" <%= filters?.status === 'CANCELLED' ? 'selected' : '' %>>Cancelled</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- Filter Payment Method -->
+                                        <div class="col-md-2">
+                                            <label for="paymentMethod" class="form-label"><i class="fas fa-wallet"></i> Payment Method</label>
+                                            <select class="form-select" id="paymentMethod" name="paymentMethod">
+                                                <option value="">All</option>
+                                                <option value="PAYPAL" <%= filters?.paymentMethod === 'PAYPAL' ? 'selected' : '' %>>PayPal</option>
+                                                <option value="CRYPTO" <%= filters?.paymentMethod === 'CRYPTO' ? 'selected' : '' %>>Crypto</option>
+                                                <option value="MOMO" <%= filters?.paymentMethod === 'MOMO' ? 'selected' : '' %>>Momo</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- Filter Payment Status -->
+                                        <div class="col-md-2">
+                                            <label for="paymentStatus" class="form-label"><i class="fas fa-check-circle"></i> Payment Status</label>
+                                            <select class="form-select" id="paymentStatus" name="paymentStatus">
+                                                <option value="">All</option>
+                                                <option value="PAYMENT_PAID" <%= filters?.paymentStatus === 'PAYMENT_PAID' ? 'selected' : '' %>>Paid</option>
+                                                <option value="PENDING" <%= filters?.paymentStatus === 'PENDING' ? 'selected' : '' %>>Pending</option>
+                                                <option value="REFUNDED" <%= filters?.paymentStatus === 'REFUNDED' ? 'selected' : '' %>>Refunded</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- Buttons -->
+                                        <div class="col-md-3 d-flex align-items-end gap-2">
+                                            <button type="submit" class="btn btn-primary flex-grow-1">
+                                                <i class="fas fa-search"></i> Filter
+                                            </button>
+                                            <a href="/admin/order" class="btn btn-secondary">
+                                                <i class="fas fa-redo"></i> Reset
+                                            </a>
+                                        </div>
+                                    </form>
+                                </div>
+                                
                                 <div class="card-body p-0">
                                     <div class="table-responsive">
                                         <table class="table table-hover align-middle mb-0">
                                             <thead class="table-light">
                                                 <tr>
                                                     <th scope="col">ID</th>
-                                                    <th scope="col"><i class="fa-solid fa-user"></i> User</th>
+                                                    <th scope="col"><i class="fa-solid fa-user"></i> Customer</th>
                                                     <th scope="col"><i class="fa-solid fa-money-bill-wave"></i> Total
                                                     </th>
                                                     <th scope="col"><i class="fa-solid fa-flag"></i> Status</th>
                                                     <th scope="col"><i class="fa-solid fa-star"></i> Review</th>
-                                                    <th scope="col"><i class="fa-solid fa-circle-check"></i> Pay Status</th>
+                                                    <th scope="col"><i class="fa-solid fa-circle-check"></i> Payment Status</th>
                                                     <th scope="col"><i class="fa-solid fa-calendar-alt"></i> Order Date</th>
                                                     <th scope="col">Action</th>
                                                 </tr>
@@ -73,55 +133,55 @@
                                                                 <% if(order.statusOrder==='PENDING' ){ %>
                                                                     <span class="badge bg-warning text-dark"><i
                                                                             class="fa-solid fa-hourglass-half"></i>
-                                                                        PENDING</span>
+                                                                        Pending</span>
                                                                     <% } else if(order.statusOrder==='PROCESSING' ){ %>
                                                                         <span class="badge bg-primary"><i
                                                                                 class="fa-solid fa-gears"></i>
-                                                                            PROCESSING</span>
+                                                                            Processing</span>
                                                                         <% } else if(order.statusOrder==='CONFIRMED' ){
                                                                             %>
                                                                             <span class="badge bg-info text-dark"><i
                                                                                     class="fa-solid fa-circle-check"></i>
-                                                                                CONFIRMED</span>
+                                                                                Confirmed</span>
                                                                             <% } else if(order.statusOrder==='PACKED' ){
                                                                                 %>
                                                                                 <span class="badge bg-secondary"><i
                                                                                         class="fa-solid fa-box"></i>
-                                                                                    PACKED</span>
+                                                                                    Packed</span>
                                                                                 <% } else
                                                                                     if(order.statusOrder==='SHIPPED' ){
                                                                                     %>
                                                                                     <span class="badge bg-primary"><i
                                                                                             class="fa-solid fa-truck"></i>
-                                                                                        SHIPPED</span>
+                                                                                        Shipped</span>
                                                                                     <% } else
                                                                                         if(order.statusOrder==='DELIVERED'
                                                                                         ){ %>
                                                                                         <span
                                                                                             class="badge bg-success"><i
                                                                                                 class="fa-solid fa-house"></i>
-                                                                                            DELIVERED</span>
+                                                                                            Delivered</span>
                                                                                         <% } else
                                                                                             if(order.statusOrder==='CANCELLED'
                                                                                             ){ %>
                                                                                             <span
                                                                                                 class="badge bg-danger"><i
                                                                                                     class="fa-solid fa-xmark"></i>
-                                                                                                CANCELLED</span>
+                                                                                                Cancelled</span>
                                                                                             <% } else
                                                                                                 if(order.statusOrder==='RETURNED'
                                                                                                 ){ %>
                                                                                                 <span
                                                                                                     class="badge bg-dark"><i
                                                                                                         class="fa-solid fa-rotate-left"></i>
-                                                                                                    RETURNED</span>
+                                                                                                    Returned</span>
                                                                                                 <% } else
                                                                                                     if(order.statusOrder==='REFUNDED'
                                                                                                     ){ %>
                                                                                                     <span
                                                                                                         class="badge bg-success"><i
                                                                                                             class="fa-solid fa-money-bill-wave"></i>
-                                                                                                        REFUNDED</span>
+                                                                                                        Refunded</span>
                                                                                                     <% } else { %>
                                                                                                         <span
                                                                                                             class="badge bg-secondary">
@@ -141,15 +201,19 @@
                                                                         <% } %>
                                                             </td>
                                                             <td>
-                                                                <% if(order.paymentStatus==='PAID' ){ %>
+                                                                <% if(order.paymentStatus==='PAID' || order.paymentStatus==='PAYMENT_PAID' ){ %>
                                                                     <span class="badge bg-success"><i
                                                                             class="fa-solid fa-check"></i> Paid</span>
-                                                                    <% } else { %>
-                                                                        <span class="badge bg-secondary"><i
-                                                                                class="fa-solid fa-clock"></i>
-                                                                            <%= order.paymentStatus %>
-                                                                        </span>
-                                                                        <% } %>
+                                                                    <% } else if(order.paymentStatus==='REFUNDED' ){ %>
+                                                                        <span class="badge bg-info"><i
+                                                                                class="fa-solid fa-undo"></i>
+                                                                            Refunded</span>
+                                                                            <% } else { %>
+                                                                                <span class="badge bg-secondary"><i
+                                                                                        class="fa-solid fa-clock"></i>
+                                                                                    <%= order.paymentStatus === 'PENDING' ? 'Pending' : order.paymentStatus %>
+                                                                                </span>
+                                                                                <% } %>
                                                             </td>
                                                             <td>
                                                                 <%= new Date(order.createdAt).toLocaleString("vi-VN", { hour12: false }) %>
@@ -159,14 +223,16 @@
                                                                     style="height:100%;">
                                                                     <a class="btn btn-sm btn-info text-white px-3 py-1"
                                                                         href="/admin/view_order/<%= order.id %>"><i
-                                                                            class="fa-solid fa-eye"></i> Detail</a>
+                                                                            class="fa-solid fa-eye"></i> Chi tiết</a>
                                                                 </div>
                                                             </td>
                                                         </tr>
                                                         <% }) %>
                                                             <% } else { %>
                                                                 <tr>
-                                                                    <td colspan="8" class="text-center">No orders found
+                                                                    <td colspan="8" class="text-center p-4 text-muted">
+                                                                        <i class="fas fa-inbox fa-2x mb-2"></i><br/>
+                                                                        Không có đơn hàng nào
                                                                     </td>
                                                                 </tr>
                                                                 <% } %>

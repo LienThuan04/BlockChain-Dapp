@@ -1,19 +1,98 @@
 import { prisma } from "config/client";
 import { PAGE_SIZE_WITH_ADMIN } from "config/constant";
 
-const GetAllOrder = async (Page: number) => {
+interface FilterOptions {
+    status?: string;
+    paymentMethod?: string;
+    paymentStatus?: string;
+    searchUser?: string;
+}
+
+const GetAllOrder = async (Page: number, filters?: FilterOptions) => {
     const skip = Page * PAGE_SIZE_WITH_ADMIN;
+    
+    // Build where clause based on filters
+    const where: any = {};
+    
+    if (filters?.status) {
+        where.statusOrder = filters.status;
+    }
+    
+    if (filters?.paymentMethod) {
+        where.paymentMethod = filters.paymentMethod;
+    }
+    
+    if (filters?.paymentStatus) {
+        where.paymentStatus = filters.paymentStatus;
+    }
+    
+    if (filters?.searchUser) {
+        // Search by fullName or email (case-insensitive)
+        where.OR = [
+            {
+                User: {
+                    fullName: {
+                        contains: filters.searchUser
+                    }
+                }
+            },
+            {
+                User: {
+                    email: {
+                        contains: filters.searchUser
+                    }
+                }
+            }
+        ];
+    }
+    
     const orders = await prisma.order.findMany({
+        where,
         include: {
             User: true,
         },
         skip,
-        take: PAGE_SIZE_WITH_ADMIN
+        take: PAGE_SIZE_WITH_ADMIN,
+        orderBy: { createdAt: 'desc' } // Mới nhất trước
     });
     return orders;
 };
-const CountTotalOrderPage = async () => {
-    const totalOrders = await prisma.order.count();
+
+const CountTotalOrderPage = async (filters?: FilterOptions) => {
+    const where: any = {};
+    
+    if (filters?.status) {
+        where.statusOrder = filters.status;
+    }
+    
+    if (filters?.paymentMethod) {
+        where.paymentMethod = filters.paymentMethod;
+    }
+    
+    if (filters?.paymentStatus) {
+        where.paymentStatus = filters.paymentStatus;
+    }
+    
+    if (filters?.searchUser) {
+        where.OR = [
+            {
+                User: {
+                    fullName: {
+                        contains: filters.searchUser
+                    }
+                }
+            },
+            {
+                User: {
+                    email: {
+                        contains: filters.searchUser
+                    }
+                }
+            }
+        ];
+    }
+    
+    const totalOrders = await prisma.order.count({ where });
     return Math.ceil(totalOrders / PAGE_SIZE_WITH_ADMIN);
 }
 

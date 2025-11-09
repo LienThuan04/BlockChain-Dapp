@@ -42,6 +42,51 @@
                                     <i class="fa-solid fa-plus"></i> Add New Product
                                 </a>
                                 </div>
+                                
+                                <!-- Filter Form -->
+                                <div class="card-body bg-light border-bottom">
+                                    <form method="GET" action="/admin/product" class="row g-3">
+                                        <div class="col-md-4">
+                                            <label for="searchName" class="form-label">Search Product Name</label>
+                                            <input type="text" class="form-control" id="searchName" name="name" placeholder="Enter product name..." value="<%= filters?.name || '' %>">
+                                        </div>
+                                        
+                                        <div class="col-md-3">
+                                            <label for="filterStatus" class="form-label">Product Status</label>
+                                            <select class="form-select" id="filterStatus" name="status">
+                                                <option value="">All Status</option>
+                                                <option value="ACTIVE" <%= filters?.status === 'ACTIVE' ? 'selected' : '' %>>Active</option>
+                                                <option value="INACTIVE" <%= filters?.status === 'INACTIVE' ? 'selected' : '' %>>Inactive</option>
+                                                <option value="OUT_OF_STOCK" <%= filters?.status === 'OUT_OF_STOCK' ? 'selected' : '' %>>Out of Stock</option>
+                                                <option value="DISCONTINUED" <%= filters?.status === 'DISCONTINUED' ? 'selected' : '' %>>Discontinued</option>
+                                                <option value="DRAFT" <%= filters?.status === 'DRAFT' ? 'selected' : '' %>>Draft</option>
+                                                <option value="PENDING" <%= filters?.status === 'PENDING' ? 'selected' : '' %>>Pending</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="col-md-3">
+                                            <label for="filterFactory" class="form-label">Factory</label>
+                                            <select class="form-select" id="filterFactory" name="factory">
+                                                <option value="">All Factories</option>
+                                                <% if(factories && factories.length > 0) { %>
+                                                    <% factories.forEach(function(f) { %>
+                                                        <option value="<%= f.id %>" <%= filters?.factory == f.id ? 'selected' : '' %>><%= f.name %></option>
+                                                    <% }) %>
+                                                <% } %>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="col-md-2 d-flex align-items-end gap-2">
+                                            <button type="submit" class="btn btn-primary w-100">
+                                                <i class="fa-solid fa-filter"></i> Filter
+                                            </button>
+                                            <a href="/admin/product" class="btn btn-secondary w-100">
+                                                <i class="fa-solid fa-redo"></i> Reset
+                                            </a>
+                                        </div>
+                                    </form>
+                                </div>
+
                                 <div class="card-body p-0">
                                     <div class="table-responsive">
                                         <table class="table table-hover align-middle mb-0">
@@ -122,21 +167,31 @@
                             </div>
                             <nav aria-label="Page navigation example">
                                 <ul class="pagination justify-content-center my-4">
+                                    <% 
+                                    let queryString = '';
+                                    if(filters) {
+                                        let params = [];
+                                        if(filters.name) params.push('name=' + encodeURIComponent(filters.name));
+                                        if(filters.status) params.push('status=' + filters.status);
+                                        if(filters.factory) params.push('factory=' + filters.factory);
+                                        queryString = params.length > 0 ? '&' + params.join('&') : '';
+                                    }
+                                    %>
                                     <li class="page-item <%= currentPage > 0 ? '' : 'disabled' %>">
-                                        <a class="page-link" href="/admin/product/?Page=<%= currentPage - 1 %>" aria-label="Previous">
+                                        <a class="page-link" href="/admin/product/?Page=<%= currentPage - 1 %><%= queryString %>" aria-label="Previous">
                                         <span aria-hidden="true">&laquo;</span>
                                     </a></li>
                                     <% if(totalPages && totalPages > 1) { %>
                                         <% for (let i = 0; i < totalPages; i++) { %>
                                                 <li class="page-item <%= i === currentPage ? 'active' : '' %>">
-                                                    <a class="page-link" href="/admin/product/?Page=<%= i %>"><%= i + 1 %></a>
+                                                    <a class="page-link" href="/admin/product/?Page=<%= i %><%= queryString %>"><%= i + 1 %></a>
                                                 </li>
                                         <% } %>
                                     <% } else { %>
                                         <li class="page-item"><a class="page-link" href="/admin/product/?Page=0">1</a></li>
                                     <% } %>
                                     <li class="page-item <%= currentPage < totalPages - 1 ? '' : 'disabled' %>">
-                                        <a class="page-link" href="/admin/product/?Page=<%= currentPage + 1 %>" aria-label="Next">
+                                        <a class="page-link" href="/admin/product/?Page=<%= currentPage + 1 %><%= queryString %>" aria-label="Next">
                                         <span aria-hidden="true">&raquo;</span>
                                         </a>
                                     </li>
@@ -149,5 +204,40 @@
         </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     <script src="/admin/js/scripts.js"></script>
+    
+    <script>
+        // Check for messages in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+        const message = urlParams.get('message');
+        const stepsJson = urlParams.get('steps');
+        const success = urlParams.get('success');
+        
+        if (error === 'delete_failed' && message) {
+            let alertMessage = decodeURIComponent(message);
+            
+            // If we have steps array, format it nicely
+            if (stepsJson) {
+                try {
+                    const steps = JSON.parse(decodeURIComponent(stepsJson));
+                    if (steps && steps.length > 0) {
+                        alertMessage = '❌ Cannot delete this product.\n\nRemaining steps to complete:\n\n' + 
+                                     steps.map((step, idx) => `${idx + 1}. ${step}`).join('\n');
+                    }
+                } catch (e) {
+                    // If JSON parsing fails, use original message
+                }
+            }
+            
+            alert(alertMessage);
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (error === 'cannot_delete_purchased_product') {
+            alert('❌ Cannot delete this product because it has been purchased by customers.\n\nYou can set the status to INACTIVE or DISCONTINUED instead.');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (success === 'product_deleted') {
+            alert('✅ Product deleted successfully!');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    </script>
 
 </html>

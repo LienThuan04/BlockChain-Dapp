@@ -160,32 +160,123 @@ const handleCreateProduct = async (
     return CreateProduct;
 };
 
-const GetAllProduct = async (CurrentPage: number) => {
+const GetAllProduct = async (CurrentPage: number, filters?: { name?: string; status?: string; factory?: string }) => {
     const PageSize = PAGE_SIZE_WITH_ADMIN;
     const Skip = CurrentPage * PageSize;
+    
+    // Build where clause based on filters
+    const where: any = {};
+    
+    if (filters?.name) {
+        where.name = {
+            contains: filters.name
+        };
+    }
+    
+    if (filters?.status) {
+        where.status = filters.status;
+    }
+    
+    if (filters?.factory) {
+        where.factoryId = Number(filters.factory);
+    }
+    
     const products = await prisma.product.findMany({
+        where,
         include: {
             factory: true,
             target: true
         },
         skip: Skip,
-        take: PageSize
+        take: PageSize,
+        orderBy: { id: 'desc' }
     });
     return products;
 };
 
-const CountTotalProductPage = async () => {
-    const count = await prisma.product.count();
+const CountTotalProductPage = async (filters?: { name?: string; status?: string; factory?: string }) => {
+    const where: any = {};
+    
+    if (filters?.name) {
+        where.name = {
+            contains: filters.name
+        };
+    }
+    
+    if (filters?.status) {
+        where.status = filters.status;
+    }
+    
+    if (filters?.factory) {
+        where.factoryId = Number(filters.factory);
+    }
+    
+    const count = await prisma.product.count({ where });
     return Math.ceil(count / PAGE_SIZE_WITH_ADMIN);
 };
 
 const PostDelProduct = async (id: number) => {
-    const DelProduct = await prisma.product.delete({
-        where: {
-            id: id
-        },
+    // Check all related data before allowing deletion
+    const remainingSteps: string[] = [];
+    
+    // 1. Check for reviews
+    const review = await prisma.review.findFirst({
+        where: { productId: id }
     });
-    return DelProduct;
+    if (review) {
+        remainingSteps.push('Delete reviews');
+    }
+    
+    // 2. Check for product images
+    const productImage = await prisma.productImage.findFirst({
+        where: { productId: id }
+    });
+    if (productImage) {
+        remainingSteps.push('Delete product images');
+    }
+    
+    // 3. Check for product variants
+    const productVariant = await prisma.productVariant.findFirst({
+        where: { productId: id }
+    });
+    if (productVariant) {
+        remainingSteps.push('Delete product variants');
+    }
+    
+    // 4. Check for cart details
+    const cartDetail = await prisma.cartdetail.findFirst({
+        where: { productId: id }
+    });
+    if (cartDetail) {
+        remainingSteps.push('Remove from shopping carts');
+    }
+    
+    // 5. Check if product has been purchased (OrderDetail exists)
+    const orderDetail = await prisma.orderDetail.findFirst({
+        where: { productId: id }
+    });
+    if (orderDetail) {
+        remainingSteps.push('Delete order details');
+    }
+    
+    // If there are remaining steps, return error with the list
+    if (remainingSteps.length > 0) {
+        const message = `Cannot delete this product. Please follow these steps in order:\n\n${remainingSteps.map((step, idx) => `${idx + 1}. ${step}`).join('\n')}`;
+        console.log(`❌ Cannot delete product ${id} - remaining steps: ${remainingSteps.join(', ')}`);
+        return { error: message, remainingSteps: remainingSteps };
+    }
+    
+    // If all checks pass, delete the product
+    try {
+        const DelProduct = await prisma.product.delete({
+            where: { id: id }
+        });
+        console.log(`✅ Product ${id} deleted successfully`);
+        return { success: true, data: DelProduct };
+    } catch (error) {
+        console.error(`❌ Error deleting product ${id}:`, error);
+        return { error: 'An error occurred while deleting the product.' };
+    }
 }
 
 // const handleUpdateProduct = async (
