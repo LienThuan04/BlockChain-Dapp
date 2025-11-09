@@ -64,7 +64,10 @@ const webroutes = (app: Express) => {
     });
 
     //Payment for client
-    router.post('/place-order', PostPlaceOrder);
+    router.post('/place-order', (req: Request, res: Response, next) => {
+        // Wrap async handler to satisfy TypeScript overloads
+        Promise.resolve(PostPlaceOrder(req, res)).catch(next);
+    });
     // Wrap async handler to satisfy TypeScript overloads and ensure errors are passed to next()
     router.post('/api/paypal/create-order', (req: Request, res: Response, next) => {
         // call the async controller and forward errors to express error handler

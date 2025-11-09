@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { AddProductToCart } from "services/client/user.service";
-import { UserRole } from "src/types/index.dt";
+import { UserRole } from "types/index.dt";
 import 'dotenv/config';
 
 const PostAddProductToCartAPI = async (req: Request, res: Response)=> {

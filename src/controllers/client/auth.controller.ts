@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { PostRegisterUser } from "services/client/auth.service";
-import { UserRole } from "src/types/index.dt";
-import { registerSchema, TRegisterSchemaType } from "src/validation/register.schema";
+import { UserRole } from "types/index.dt";
+import { registerSchema, TRegisterSchemaType } from "validation/register.schema";
 
 const getLoginPage = (req: Request, res: Response) => {
     // const errors: string[] = [];

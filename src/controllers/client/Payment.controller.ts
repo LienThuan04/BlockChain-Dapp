@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { UserRole } from "src/types/index.dt";
+import { UserRole } from "types/index.dt";
 import * as paypal from '@paypal/checkout-server-sdk';
 import 'dotenv/config';
 import { client } from "config/paypal";
@@ -16,24 +16,32 @@ const PostPlaceOrder = async (req: Request, res: Response) => {
     if (!user) {
         return res.redirect('/login');
     } else {
-        // Logic to place the order
-        const orderResult = await PlaceOrder(user, {
-            receiverName,
-            receiverPhone,
-            receiverAddress,
-            receiverEmail,
-            receiverNote,
-            paymentMethod,
-            ListIdCartDetail: ListIdDetailOrder
-        });
-        if (orderResult) {
-            const CartUserId = await FindCartForUserId(user.id) ?? null;
-            const UserQuantityCart = {...user, quantityCart: CartUserId ? CartUserId.quantity : 0 };
-            return res.render('client/product/thanksOrder.ejs', { status: 'Pending', user: UserQuantityCart, targets: await GetAllTargetForClient(), factories: await GetAllFactoryForClient() });
-        } else {
-            console.error('Error placing order:', orderResult);
-            return res.render('status/500.ejs');
+        // Don't create order here - only create after payment success
+        // For PayPal: order created in PaypalSuccess callback
+        // For Crypto: order created after blockchain transaction
+        // Just save order info to session
+        
+        if (req.session) {
+            req.session.orderInfo = {
+                receiverName,
+                receiverPhone,
+                receiverAddress,
+                receiverEmail,
+                receiverNote,
+                paymentMethod,
+                ListIdDetailOrder: ListIdDetailOrder
+            };
+            console.log('💾 Order info saved to session, ready for payment processing');
         }
+
+        // Return success - client will handle payment method
+        // For PayPal: client will call /api/paypal/create-order
+        // For Crypto: client will initiate crypto checkout
+        return res.json({ 
+            success: true, 
+            message: 'Order info saved, ready for payment',
+            paymentMethod: paymentMethod 
+        });
     }
 };
 //config PayPal
@@ -202,9 +210,12 @@ const PaypalSuccess = async (req: Request, res: Response) => {
             // Otherwise, attempt to capture the order to finalize payment.
             let paymentRef = '';
             let paymentStatus = 'PENDING';
+            let isPaymentSuccessful = false;
+            
             if (paypalOrder && (paypalOrder.status === 'COMPLETED' || paypalOrder.status === 'APPROVED')) {
                 paymentRef = `PayPalOrder:${paypalOrder.id}`;
                 paymentStatus = 'PAYMENT_PAID';
+                isPaymentSuccessful = true;
                 console.log('✅ [PAYPAL] Order already APPROVED/COMPLETED');
             } else if (token) {
                 try {
@@ -215,30 +226,49 @@ const PaypalSuccess = async (req: Request, res: Response) => {
                     const captureResp = await client.execute(captureReq);
                     console.log('✅ [PAYPAL] Capture response status:', captureResp?.result?.status);
                     console.log('✅ [PAYPAL] Capture response:', JSON.stringify(captureResp?.result, null, 2));
-                    paymentRef = `PayPalCapture:${captureResp?.result?.id || token}`;
-                    paymentStatus = captureResp?.result?.status === 'COMPLETED' ? 'PAYMENT_PAID' : 'PENDING';
+                    
+                    if (captureResp?.result?.status === 'COMPLETED') {
+                        paymentRef = `PayPalCapture:${captureResp?.result?.id || token}`;
+                        paymentStatus = 'PAYMENT_PAID';
+                        isPaymentSuccessful = true;
+                    } else {
+                        console.error('❌ [PAYPAL] Capture did not complete, status:', captureResp?.result?.status);
+                        paymentRef = `PayPalCapture:${captureResp?.result?.id || token}`;
+                        paymentStatus = 'PENDING';
+                        isPaymentSuccessful = false;
+                    }
                 } catch (capErr) {
                     console.error('❌ [PAYPAL] Error capturing PayPal order:', capErr instanceof Error ? capErr.message : capErr);
-                    // proceed but mark payment as pending
+                    // PAYMENT FAILED - don't create order
                     paymentRef = `TokenPaypal:${token}`;
-                    paymentStatus = 'PENDING';
+                    paymentStatus = 'FAILED';
+                    isPaymentSuccessful = false;
                 }
+            } else {
+                console.error('❌ [PAYPAL] No token provided and no PayPal order - payment failed');
+                isPaymentSuccessful = false;
+                paymentStatus = 'FAILED';
             }
 
-            console.log('🔖 [PAYPAL] Payment ref:', paymentRef, 'Status:', paymentStatus);
-            const orderResult = await PlaceOrder(user, {
-                receiverName: orderInfo.receiverName || '',
-                receiverPhone: orderInfo.receiverPhone || '',
-                receiverAddress: orderInfo.receiverAddress || '',
-                receiverEmail: orderInfo.receiverEmail || null,
-                receiverNote: orderInfo.receiverNote || null,
-                paymentMethod: orderInfo.paymentMethod || '',
-                paymentRef: paymentRef || `TokenPaypal:${req.query.token}, PayerID:${req.query.PayerID}`,
-                paymentStatus: paymentStatus,
-                ListIdCartDetail: orderInfo.ListIdDetailOrder
-            });
-
-            console.log('📋 [PAYPAL] Order created:', orderResult ? 'Success' : 'Failed');
+            console.log('🔖 [PAYPAL] Payment Status:', paymentStatus, 'IsSuccessful:', isPaymentSuccessful);
+            
+            // ONLY CREATE ORDER IF PAYMENT WAS SUCCESSFUL
+            if (isPaymentSuccessful && paymentStatus === 'PAYMENT_PAID') {
+                const orderResult = await PlaceOrder(user, {
+                    receiverName: orderInfo.receiverName || '',
+                    receiverPhone: orderInfo.receiverPhone || '',
+                    receiverAddress: orderInfo.receiverAddress || '',
+                    receiverEmail: orderInfo.receiverEmail || null,
+                    receiverNote: orderInfo.receiverNote || null,
+                    paymentMethod: orderInfo.paymentMethod || '',
+                    paymentRef: paymentRef,
+                    paymentStatus: paymentStatus,
+                    ListIdCartDetail: orderInfo.ListIdDetailOrder
+                });
+                console.log('📋 [PAYPAL] Order created:', orderResult ? 'Success' : 'Failed');
+            } else {
+                console.error('❌ [PAYPAL] Payment not successful - order NOT created. Status:', paymentStatus);
+            }
             
         const CartUserId = await FindCartForUserId(user.id) ?? null;
         const UserQuantityCart = {...user, quantityCart: CartUserId ? CartUserId.quantity : 0 };
@@ -248,9 +278,10 @@ const PaypalSuccess = async (req: Request, res: Response) => {
             delete req.session.orderInfo;
         }
         
-        console.log('✅ [PAYPAL] PayPal flow complete, rendering success page');
+        const resultStatus = isPaymentSuccessful ? 'Success' : 'Failed';
+        console.log(`✅ [PAYPAL] PayPal flow complete, rendering page with status: ${resultStatus}`);
         return res.render('client/product/thanksOrder.ejs', { 
-            status: 'Success', 
+            status: resultStatus, 
             totalVND: orderInfo.totalVND, 
             user: UserQuantityCart, 
             targets: Target, 

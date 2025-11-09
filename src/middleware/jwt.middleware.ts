@@ -24,7 +24,7 @@ const checkValidJWT = (req: Request, res: Response, next: NextFunction) => {
             const jwtToken = token.split(' ')[1]; // Lấy phần token sau "Bearer "
             const dataDecoded: any = jwt.verify(jwtToken, process.env.JWT_SECRET_KEY as string); // Giải mã token sử dụng secret key từ biến môi trường .env
             console.log("Decoded JWT data:", dataDecoded);
-            req.UserJWT = { //UserJWT này được định nghĩa trong src/types/index.dt.ts 
+            (req as any).UserJWT = { //UserJWT này được định nghĩa trong src/types/index.dt.ts 
                 id: dataDecoded.id ?? dataDecoded.userId ?? 0,
                 fullName: dataDecoded.fullName ?? '',
                 email: dataDecoded.email ?? '',

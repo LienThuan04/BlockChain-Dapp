@@ -22,6 +22,16 @@ export const confirmEthPayment = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Invalid transaction' });
         }
 
+        // Get product variant (first one available)
+        const variant = await prisma.productVariant.findFirst({
+            where: { productId },
+            orderBy: { id: 'asc' }
+        });
+
+        if (!variant) {
+            return res.status(400).json({ message: 'Product variant not found' });
+        }
+
         // Get current ETH price (you might want to use a price feed service in production)
         const ethPrice = 2000; // Example price in USD
 
@@ -30,15 +40,16 @@ export const confirmEthPayment = async (req: Request, res: Response) => {
             data: {
                 userId,
                 totalPrice: parseFloat(ethAmount) * ethPrice,
-                status: 'COMPLETED',
                 paymentMethod: 'ETH',
-                txHash: transactionHash,
-                ethAmount,
-                ethPrice,
-                blockNumber,
+                paymentStatus: 'PAYMENT_PAID',
+                statusOrder: 'PENDING',
+                receiverName: 'Pending',
+                receiverPhone: '',
+                receiverAddress: '',
                 orderDetails: {
                     create: {
                         productId,
+                        productVariantId: variant.id,
                         quantity: 1,
                         price: parseFloat(ethAmount) * ethPrice
                     }
@@ -67,7 +78,7 @@ export const confirmEthPayment = async (req: Request, res: Response) => {
         console.error('Error confirming ETH payment:', error);
         res.status(500).json({ 
             message: 'Internal server error', 
-            error: error.message 
+            error: error instanceof Error ? error.message : 'Unknown error'
         });
     }
 };

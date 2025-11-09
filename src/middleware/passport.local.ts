@@ -3,7 +3,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import bcrypt from 'bcrypt';
 import { GetQuantityCart, GetUserWithRoleById } from "services/client/auth.service";
-import { UserRole } from "src/types/index.dt";
+import { UserRole } from "types/index.dt";
 
 const comparePassword = async (plainPassword: string, hashedPassword: string) => { //kiểm tra mật khẩu đã mã hóa có đúng không
     return await bcrypt.compare(plainPassword, hashedPassword);

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { handleUserLogin } from "services/client/auth.service";
-import { LoginSchema, TLoginSchema } from "src/validation/Auth.chema";
+import { LoginSchema, TLoginSchema } from "validation/Auth.chema";
 
 const LoginAPI = async (req: Request, res: Response) => {
     const { username, password } = req.body as TLoginSchema;

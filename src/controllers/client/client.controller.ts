@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { GetAllFactoryForClient, GetAllTargetForClient, GetNewProducts, GetProductByIdForClient, GetRecommendedProducts } from "services/client/item.service";
-import { UserRole } from "src/types/index.dt";
+import { UserRole } from "types/index.dt";
 import 'dotenv/config';
 import { AddProductToCart, CancelOrderById, ChangeUserPassword, DelProductFromCart, FindCartForUserId, GetDetailHistoryById, GetOrderHistoryForUser, GetProductByCartDetail, GetReviewedFormUser, PostClientToUpdateAcc, PostReviewProductToHistory, UpdateQuantityBeforeCheckout } from "services/client/user.service";
 import { GetCountFactoryProduct, GetProductWithFilter } from "services/client/products.filter";

@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { GetAllUser, GetUserById } from "services/admin/user.service";
 import { DelUserById, UpdateUserByID } from "services/admin/userApi.service";
 import { PostRegisterUser } from "services/client/auth.service";
-import { registerSchema, TRegisterSchemaType } from "src/validation/register.schema";
+import { registerSchema, TRegisterSchemaType } from "validation/register.schema";
 
 const getAllUserApi = async (req: Request, res: Response) => {
     const users = await GetAllUser();

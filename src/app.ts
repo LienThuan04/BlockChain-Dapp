@@ -1,4 +1,5 @@
 // const Express = require('express');
+import 'module-alias/register';
 import express from 'express';
 import 'dotenv/config';
 import webroutes from 'routes/web';

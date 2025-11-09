@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { GetAllFactory, GetAllTarget, handleCreateProduct, PostDelProduct, getProductWithVariantsById, handleUpdateProductWithVariants } from 'services/admin/Product.service';
-import { ProductSchema, TProductSchemaType } from 'src/validation/user.schema';
+import { ProductSchema, TProductSchemaType } from 'validation/user.schema';
 
 const getAdminCreateProductPage = async (req: Request, res: Response) => {
     const errors: string[] = [];

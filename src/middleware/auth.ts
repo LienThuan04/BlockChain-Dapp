@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { UserRole } from "src/types/index.dt";
+import jwt from 'jsonwebtoken';
+import { UserRole } from "types/index.dt";
 
 
 const islogin = (req: Request, res: Response, next: NextFunction) => {

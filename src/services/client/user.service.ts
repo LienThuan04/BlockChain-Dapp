@@ -1,5 +1,5 @@
-import { prisma } from "config/client";
-import { UserRole } from "src/types/index.dt";
+import { prisma } from 'config/client';
+import { UserRole } from "types/index.dt";
 import bcrypt from 'bcrypt';
 import { hashPassword } from "services/admin/user.service";
 
