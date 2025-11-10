@@ -244,7 +244,26 @@ const GetOrderHistory = async (req: Request, res: Response) => {
         return res.render('status/500.ejs');
     };
     const checkReviewed = await GetReviewedFormUser(0, user); // Lấy tất cả đánh giá của user
-    return res.render('client/accountClient/history.ejs', { orderHistory: orderHistory, checkReviewed, targets: Target, factories: Factory });
+    // attach crypto info per order
+    try {
+        const crypto = await getActiveCryptoInfo();
+        const ordersWithCrypto = (orderHistory || []).map((order: any) => {
+            const cryptoTotal = convertVndToCrypto(Number(order.totalPrice || 0), crypto.priceVND, crypto.decimals, 8);
+            // attach per-line crypto for orderDetails
+            const details = (order.orderDetails || []).map((item: any) => {
+                const variantPriceMore = (item.productVariant && item.productVariant.priceMore) ? item.productVariant.priceMore : 0;
+                const unitPrice = (item.product && item.product.price ? item.product.price : 0) + variantPriceMore;
+                const lineVnd = unitPrice * (item.quantity || 0);
+                const lineCrypto = convertVndToCrypto(Number(lineVnd || 0), crypto.priceVND, crypto.decimals, 8);
+                return { ...item, lineCrypto };
+            });
+            return { ...order, cryptoTotal, orderDetails: details };
+        });
+        return res.render('client/accountClient/history.ejs', { orderHistory: ordersWithCrypto, checkReviewed, targets: Target, factories: Factory, cryptoActive: crypto });
+    } catch (e) {
+        console.warn('Could not attach crypto info to order history', e);
+        return res.render('client/accountClient/history.ejs', { orderHistory: orderHistory, checkReviewed, targets: Target, factories: Factory });
+    }
 };
 
 const GetDetailHistory = async (req: Request, res: Response) => {
@@ -259,7 +278,23 @@ const GetDetailHistory = async (req: Request, res: Response) => {
     if (!result) {
         return res.render('status/500.ejs');
     }
-    return res.render('client/accountClient/detailHistory.ejs', { history: result, targets: Target, factories: Factory });
+    // attach crypto info for detail view
+    try {
+        const crypto = await getActiveCryptoInfo();
+        const details = (result.orderDetails || []).map((item: any) => {
+            const variantPriceMore = (item.productVariant && item.productVariant.priceMore) ? item.productVariant.priceMore : 0;
+            const unitPrice = (item.product && item.product.price ? item.product.price : 0) + variantPriceMore;
+            const lineVnd = unitPrice * (item.quantity || 0);
+            const lineCrypto = convertVndToCrypto(Number(lineVnd || 0), crypto.priceVND, crypto.decimals, 8);
+            return { ...item, lineCrypto };
+        });
+        const cryptoTotal = convertVndToCrypto(Number(result.totalPrice || 0), crypto.priceVND, crypto.decimals, 8);
+        const historyWithCrypto = { ...result, orderDetails: details, cryptoTotal };
+        return res.render('client/accountClient/detailHistory.ejs', { history: historyWithCrypto, targets: Target, factories: Factory, cryptoActive: crypto });
+    } catch (e) {
+        console.warn('Could not attach crypto info to detail history', e);
+        return res.render('client/accountClient/detailHistory.ejs', { history: result, targets: Target, factories: Factory });
+    }
 };
 
 const GetReviewPage = async (req: Request, res: Response) => {
