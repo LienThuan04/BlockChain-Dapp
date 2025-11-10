@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Số lượng sản phẩm đã mua',
+                    label: 'Number of products purchased',
                     data: values,
                     backgroundColor: colors,
                 }]

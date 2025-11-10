@@ -32,14 +32,14 @@
                 <div class="container-fluid px-4">
                     <div class="d-flex justify-content-between align-items-center mt-4 mb-1">
                         <div class="d-flex flex-column w-100">
-                            <h1 class="fw-bold text-primary mb-1"><i class="fas fa-wallet"></i> Ví Tiền Điện Tử (Crypto Wallet)</h1>
+                            <h1 class="fw-bold text-primary mb-1"><i class="fas fa-wallet"></i> Crypto Wallet</h1>
                             <ol class="breadcrumb bg-light rounded shadow-sm px-3 py-2 mt-2" style="cursor: pointer;">
                                 <li class="breadcrumb-item"><a href="/admin" class="text-decoration-none">Dashboard</a></li>
                                 <li class="breadcrumb-item active">Crypto Wallet</li>
                             </ol>
                         </div>
                         <a href="/admin/crypto-wallet/export" class="btn btn-primary">
-                            <i class="fas fa-download"></i> Xuất CSV
+                            <i class="fas fa-download"></i> Export CSV
                         </a>
                     </div>
 
@@ -53,21 +53,22 @@
                     <!-- Wallet Info Card -->
                     <div class="card mb-4">
                         <div class="card-header">
-                            <i class="fas fa-wallet me-2"></i>Thông Tin Ví
+                            <i class="fas fa-wallet me-2"></i>Wallet Info
                         </div>
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-xl-6">
                                     <div class="mb-3">
-                                        <h6 class="text-muted mb-1">Số Dư Ví</h6>
+                                        <h6 class="text-muted mb-1">Wallet Balance</h6>
                                         <h3 class="text-primary"><%= balanceInSGB %> <small>SGB</small></h3>
                                     </div>
                                 </div>
                                 <div class="col-xl-6">
                                     <div class="mb-3">
-                                        <h6 class="text-muted mb-1">Địa Chỉ Ví</h6>
-                                        <p class="text-monospace mb-0" style="font-family: monospace; word-break: break-all; font-size: 12px;">
-                                            <%= walletAddress %>
+                                        <h6 class="text-muted mb-1">Wallet Address</h6>
+                                        <p class="text-monospace mb-0" 
+                                            style="font-family: monospace; word-break: break-all; font-size: 12px; color: red; font-weight: bold;">
+                                                <%= walletAddress %>
                                         </p>
                                     </div>
                                 </div>
@@ -80,7 +81,7 @@
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="card-body text-center">
-                                    <div class="text-muted small mb-1"><i class="fas fa-exchange-alt me-1"></i>Tổng Giao Dịch</div>
+                                    <div class="text-muted small mb-1"><i class="fas fa-exchange-alt me-1"></i>Total Transactions</div>
                                     <h3 class="text-primary"><%= totalTransactions %></h3>
                                 </div>
                             </div>
@@ -88,7 +89,7 @@
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="card-body text-center">
-                                    <div class="text-muted small mb-1"><i class="fas fa-coins me-1"></i>Tổng Nhận (SGB)</div>
+                                    <div class="text-muted small mb-1"><i class="fas fa-coins me-1"></i>Total Received (SGB)</div>
                                     <h3 class="text-primary"><%= totalReceivedSGB %></h3>
                                 </div>
                             </div>
@@ -96,7 +97,7 @@
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="card-body text-center">
-                                    <div class="text-muted small mb-1"><i class="fas fa-money-bill me-1"></i>Tổng Nhận (VND)</div>
+                                    <div class="text-muted small mb-1"><i class="fas fa-money-bill me-1"></i>Total Received (VND)</div>
                                     <h3 class="text-primary"><%= new Intl.NumberFormat('vi-VN').format(totalReceived) %></h3>
                                 </div>
                             </div>
@@ -106,7 +107,7 @@
                     <!-- Transactions Table -->
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <div><i class="fas fa-list me-2"></i>Lịch Sử Giao Dịch</div>
+                            <div><i class="fas fa-list me-2"></i>Transaction History</div>
                         </div>
                         <div class="card-body">
                             <% if (transactions && transactions.length > 0) { %>
@@ -114,14 +115,14 @@
                                     <table class="table table-hover mb-0">
                                         <thead class="table-light">
                                             <tr>
-                                                <th>Mã Đơn</th>
-                                                <th>Người Dùng</th>
+                                                <th>Order ID</th>
+                                                <th>User</th>
                                                 <th>Email</th>
-                                                <th>Số Tiền</th>
-                                                <th>Ngày</th>
-                                                <th>Trạng Thái</th>
-                                                <th>Hash Giao Dịch</th>
-                                                <th>Hành Động</th>
+                                                <th>Amount</th>
+                                                <th>Date</th>
+                                                <th>Status</th>
+                                                <th>Transaction Hash</th>
+                                                <th>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -137,11 +138,11 @@
                                                     <td><small><%= tx.createdAt %></small></td>
                                                     <td>
                                                         <% const statusMap = {
-                                                            'COMPLETED': { badge: 'success', text: 'Thành Công' },
-                                                            'SUCCESS': { badge: 'success', text: 'Thành Công' },
-                                                            'REFUNDED': { badge: 'info', text: 'Đã Hoàn Tiền' },
-                                                            'PENDING': { badge: 'warning', text: 'Đang Xử Lý' },
-                                                            'FAILED': { badge: 'danger', text: 'Thất Bại' }
+                                                            'COMPLETED': { badge: 'success', text: 'Completed' },
+                                                                'SUCCESS': { badge: 'success', text: 'Completed' },
+                                                                'REFUNDED': { badge: 'info', text: 'Refunded' },
+                                                                'PENDING': { badge: 'warning', text: 'Pending' },
+                                                                'FAILED': { badge: 'danger', text: 'Failed' }
                                                         };
                                                         const statusInfo = statusMap[tx.status] || { badge: 'secondary', text: tx.status };
                                                         %>
@@ -156,7 +157,7 @@
                                                     </td>
                                                     <td>
                                                         <button class="btn btn-sm btn-outline-primary view-details" data-order-id="<%= tx.orderId %>">
-                                                            <i class="fas fa-eye"></i> Chi Tiết
+                                                            <i class="fas fa-eye"></i> Details
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -166,7 +167,7 @@
                                                         <div id="detailContent<%= tx.orderId %>" class="p-3">
                                                             <div class="text-center">
                                                                 <div class="spinner-border text-primary spinner-border-sm" role="status">
-                                                                    <span class="visually-hidden">Đang tải...</span>
+                                                                    <span class="visually-hidden">Loading...</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -212,21 +213,21 @@
                             let html = `
                                 <div class="row mb-3">
                                     <div class="col-md-6">
-                                        <h6 class="text-primary mb-2"><i class="fas fa-file-invoice me-1"></i>Thông Tin Đơn Hàng</h6>
+                                        <h6 class="text-primary mb-2"><i class="fas fa-file-invoice me-1"></i>Order Info</h6>
                                         <div class="mb-2">
-                                            <strong>Mã Đơn:</strong> #${data.orderId}
+                                            <strong>Order ID:</strong> #${data.orderId}
                                         </div>
                                         <div class="mb-2">
-                                            <strong>Trạng Thái:</strong> <span class="badge bg-success">${data.payment.status}</span>
+                                            <strong>Status:</strong> <span class="badge bg-success">${data.payment.status}</span>
                                         </div>
                                         <div class="mb-2">
-                                            <strong>Phương Thức:</strong> ${data.payment.method}
+                                            <strong>Method:</strong> ${data.payment.method}
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <h6 class="text-primary mb-2"><i class="fas fa-user me-1"></i>Thông Tin Người Dùng</h6>
+                                        <h6 class="text-primary mb-2"><i class="fas fa-user me-1"></i>User Info</h6>
                                         <div class="mb-2">
-                                            <strong>Tên:</strong> ${data.user.fullName}
+                                            <strong>Name:</strong> ${data.user.fullName}
                                         </div>
                                         <div class="mb-2">
                                             <strong>Email:</strong> ${data.user.email}
@@ -236,37 +237,37 @@
                                 
                                 <hr>
                                 
-                                <h6 class="text-primary mb-2"><i class="fas fa-exchange-alt me-1"></i>Thông Tin Giao Dịch</h6>
+                                <h6 class="text-primary mb-2"><i class="fas fa-exchange-alt me-1"></i>Transaction Info</h6>
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <div class="mb-2">
-                                            <strong>Số Tiền:</strong> ${data.payment.sgbAmount} SGB
+                                            <strong>Amount:</strong> ${data.payment.sgbAmount} SGB
                                         </div>
                                         <div class="mb-2">
-                                            <strong>Tương đương:</strong> ${new Intl.NumberFormat('vi-VN').format(data.payment.totalPrice)} VND
+                                            <strong>Equivalent:</strong> ${new Intl.NumberFormat('en-US').format(data.payment.totalPrice)} VND
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-2">
-                                            <strong>Hash Giao Dịch:</strong><br>
+                                            <strong>Transaction Hash:</strong><br>
                                             <code style="word-break: break-all; font-size: 11px;">${data.payment.transactionHash || 'N/A'}</code>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="mb-3">
-                                    <strong>Ngày Tạo:</strong> ${new Date(data.createdAt).toLocaleString('vi-VN')}
+                                    <strong>Created At:</strong> ${new Date(data.createdAt).toLocaleString('en-US')}
                                 </div>
                                 
                                 <hr>
                                 
-                                <h6 class="text-primary mb-2"><i class="fas fa-truck me-1"></i>Thông Tin Nhận Hàng</h6>
+                                <h6 class="text-primary mb-2"><i class="fas fa-truck me-1"></i>Receiver Info</h6>
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <div class="mb-2">
-                                            <strong>Tên:</strong> ${data.receiver.name}
+                                            <strong>Name:</strong> ${data.receiver.name}
                                         </div>
                                         <div class="mb-2">
-                                            <strong>Điện Thoại:</strong> ${data.receiver.phone}
+                                            <strong>Phone:</strong> ${data.receiver.phone}
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -274,25 +275,25 @@
                                             <strong>Email:</strong> ${data.receiver.email}
                                         </div>
                                         <div class="mb-2">
-                                            <strong>Ghi Chú:</strong> ${data.receiver.note || 'Không có'}
+                                            <strong>Note:</strong> ${data.receiver.note || 'None'}
                                         </div>
                                     </div>
                                 </div>
                                 <div class="mb-3">
-                                    <strong>Địa Chỉ:</strong> ${data.receiver.address}
+                                    <strong>Address:</strong> ${data.receiver.address}
                                 </div>
                                 
                                 <hr>
                                 
-                                <h6 class="text-primary mb-2"><i class="fas fa-box me-1"></i>Chi Tiết Sản Phẩm</h6>
+                                <h6 class="text-primary mb-2"><i class="fas fa-box me-1"></i>Product Details</h6>
                                 <div class="table-responsive">
                                     <table class="table table-sm mb-0">
                                         <thead class="table-light">
                                             <tr>
-                                                <th>Sản Phẩm</th>
-                                                <th>Số Lượng</th>
-                                                <th>Giá</th>
-                                                <th>Tổng</th>
+                                                <th>Product</th>
+                                                <th>Quantity</th>
+                                                <th>Price</th>
+                                                <th>Total</th>
                                             </tr>
                                         </thead>
                                         <tbody>

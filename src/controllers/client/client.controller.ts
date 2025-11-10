@@ -5,6 +5,7 @@ import 'dotenv/config';
 import { AddProductToCart, CancelOrderById, ChangeUserPassword, DelProductFromCart, FindCartForUserId, GetDetailHistoryById, GetOrderHistoryForUser, GetProductByCartDetail, GetReviewedFormUser, PostClientToUpdateAcc, PostReviewProductToHistory, UpdateQuantityBeforeCheckout } from "services/client/user.service";
 import { GetCountFactoryProduct, GetProductWithFilter } from "services/client/products.filter";
 import { PAGE_SIZE_REVIEW } from "config/constant";
+import { getActiveCryptoInfo, convertVndToCrypto } from 'services/crypto/crypto.service';
 
 
 const GetProductPage = async (req: Request, res: Response) => {
@@ -25,7 +26,21 @@ const GetProductPage = async (req: Request, res: Response) => {
     const StartTotal = RecommendedProducts.length > 0 ? RecommendedProducts.reduce((acc, item) => acc + item.rating, 0) : 0;
     const AverageRating = RecommendedProducts.length > 0 ? (StartTotal / RecommendedProducts.length) : 0; 
     const NewProducts = await GetNewProducts(8);
-    return res.render('client/product/detail.ejs', { product: DetailProduct, targets: Target, factories: Factory, quantityProductFactory: QuantityProductFactory, recommendedProducts: RecommendedProducts, averageRating: AverageRating, newProducts: NewProducts });
+    // attach crypto price for product detail
+    try {
+        const crypto = await getActiveCryptoInfo();
+        if (DetailProduct) {
+            const basePrice = Number(DetailProduct.price || 0);
+            const firstVariantMore = Number(DetailProduct.productVariants && DetailProduct.productVariants[0] ? (DetailProduct.productVariants[0].priceMore || 0) : 0);
+            const displayVnd = basePrice + firstVariantMore;
+            const productCrypto = convertVndToCrypto(displayVnd, crypto.priceVND, crypto.decimals, 8);
+            return res.render('client/product/detail.ejs', { product: DetailProduct, targets: Target, factories: Factory, quantityProductFactory: QuantityProductFactory, recommendedProducts: RecommendedProducts, averageRating: AverageRating, newProducts: NewProducts, cryptoActive: crypto, productCrypto });
+        }
+        return res.render('client/product/detail.ejs', { product: DetailProduct, targets: Target, factories: Factory, quantityProductFactory: QuantityProductFactory, recommendedProducts: RecommendedProducts, averageRating: AverageRating, newProducts: NewProducts });
+    } catch (e) {
+        console.warn('Unable to fetch crypto info for product detail', e);
+        return res.render('client/product/detail.ejs', { product: DetailProduct, targets: Target, factories: Factory, quantityProductFactory: QuantityProductFactory, recommendedProducts: RecommendedProducts, averageRating: AverageRating, newProducts: NewProducts });
+    }
 };
 
 const PostAddProductToCart = async (req: Request, res: Response) => {
@@ -55,7 +70,21 @@ const GetCartPage = async (req: Request, res: Response) => {
         const TotalPrice = detailCart.reduce((acc, item) => acc + (item.price * (item.quantityProduct ? item.quantityProduct : 0)), 0);
         
         console.log(detailCart, TotalPrice);
-        return res.render('client/product/cart.ejs', { cartDetails: detailCart, TotalPrice: TotalPrice, targets: Target, factories: Factory });
+        // Get active crypto info and convert total
+        try {
+            const crypto = await getActiveCryptoInfo();
+            // Attach cryptoPrice for each item (per item total in crypto)
+            const cartWithCrypto = detailCart.map((item: any) => {
+                const itemTotalVND = Number(item.price || 0) * Number(item.quantityProduct || 0);
+                const cryptoAmount = convertVndToCrypto(itemTotalVND, crypto.priceVND, crypto.decimals, 8);
+                return { ...item, cryptoAmount }; 
+            });
+            const cryptoTotal = convertVndToCrypto(TotalPrice, crypto.priceVND, crypto.decimals, 8);
+            return res.render('client/product/cart.ejs', { cartDetails: cartWithCrypto, TotalPrice: TotalPrice, cryptoTotal, cryptoActive: crypto, targets: Target, factories: Factory });
+        } catch (e) {
+            console.warn('Could not compute crypto price for cart', e);
+            return res.render('client/product/cart.ejs', { cartDetails: detailCart, TotalPrice: TotalPrice, targets: Target, factories: Factory });
+        }
     }
     return res.render('client/product/cart.ejs', { cartDetails: [], TotalPrice: 0, targets: Target, factories: Factory });
 
@@ -186,7 +215,20 @@ const GetAllProductsforClient = async (req: Request, res: Response) => {
     const Target = await GetAllTargetForClient();
     // Lọc sản phẩm theo yêu cầu
     const productWithFilter = await GetProductWithFilter( CurrentPage, 9, factory, target, priceRange, sort );
-    return res.render('client/product/products.ejs', { products: productWithFilter.product, currentPage: CurrentPage, totalPages: productWithFilter.totalPages, factories: Factory, targets: Target });
+    try {
+        const crypto = await getActiveCryptoInfo();
+        const productsWithCrypto = (productWithFilter.product || []).map((p: any) => {
+            const base = Number(p.price || 0);
+            const more = Number(p.productVariants && p.productVariants[0] ? (p.productVariants[0].priceMore || 0) : 0);
+            const displayVnd = base + more;
+            const cryptoAmount = convertVndToCrypto(displayVnd, crypto.priceVND, crypto.decimals, 8);
+            return { ...p, cryptoAmount };
+        });
+        return res.render('client/product/products.ejs', { products: productsWithCrypto, currentPage: CurrentPage, totalPages: productWithFilter.totalPages, factories: Factory, targets: Target, cryptoActive: crypto });
+    } catch (e) {
+        console.warn('Unable to fetch crypto info for product list', e);
+        return res.render('client/product/products.ejs', { products: productWithFilter.product, currentPage: CurrentPage, totalPages: productWithFilter.totalPages, factories: Factory, targets: Target });
+    }
 };
 
 const GetOrderHistory = async (req: Request, res: Response) => {

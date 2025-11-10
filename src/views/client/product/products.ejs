@@ -195,8 +195,11 @@
                                                                     style="font-size: 14px; text-align: center; width: 100%;">
                                                                     <%= product.shortDesc %>
                                                                 </p>
-                                                                <div class="d-flex justify-content-center flex-lg-wrap">
-                                                                    <p class="fs-5">
+                                                                <div class="d-flex justify-content-center flex-column align-items-center">
+                                                                    <% if (typeof product.cryptoAmount !== 'undefined' && cryptoActive) { %>
+                                                                        <p class="fs-6 text-muted mb-1">~ <%= product.cryptoAmount %> <%= cryptoActive.symbol || cryptoActive.code %></p>
+                                                                    <% } %>
+                                                                    <p class="fs-5 mb-0">
                                                                         <%= (product.price + (product.productVariants[0]?.priceMore || 0)).toLocaleString('vi-VN') %> VND
                                                                     </p>
                                                                 </div>

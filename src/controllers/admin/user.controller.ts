@@ -2,6 +2,7 @@ import { PAGE_SIZE_WITH_CLIENT } from "config/constant";
 import {Request, Response} from "express"
 import { GetAllRole, GetUserById, handleCreateUser, PostDeleteUser, PostUpdateUserbyid } from "services/admin/user.service";
 import { CountTotalProductPage, GetAllFactoryForClient, GetAllProductforClient, GetAllTargetForClient } from "services/client/item.service";
+import { getActiveCryptoInfo, convertVndToCrypto } from 'services/crypto/crypto.service';
 
 const getHomePage = async (req: Request, res: Response) => {
     let Factory: Array<{id: number, name: string }> = [];
@@ -25,7 +26,20 @@ const getHomePage = async (req: Request, res: Response) => {
     Factory = await GetAllFactoryForClient();
     Target = await GetAllTargetForClient();
 
-    return res.render('./client/home/show.ejs', { products: GetAllProduct, factories: Factory, targets: Target, currentPage: CurrentPage, totalPages: totalPages});
+    try {
+        const crypto = await getActiveCryptoInfo();
+        const productsWithCrypto = (GetAllProduct || []).map((p: any) => {
+            const base = Number(p.price || 0);
+            const more = Number(p.productVariants && p.productVariants[0] ? (p.productVariants[0].priceMore || 0) : 0);
+            const displayVnd = base + more;
+            const cryptoAmount = convertVndToCrypto(displayVnd, crypto.priceVND, crypto.decimals, 8);
+            return { ...p, cryptoAmount };
+        });
+        return res.render('./client/home/show.ejs', { products: productsWithCrypto, factories: Factory, targets: Target, currentPage: CurrentPage, totalPages: totalPages, cryptoActive: crypto});
+    } catch (e) {
+        console.warn('Unable to attach crypto info to home products', e);
+        return res.render('./client/home/show.ejs', { products: GetAllProduct, factories: Factory, targets: Target, currentPage: CurrentPage, totalPages: totalPages});
+    }
 };
 
 const getCreateUserPage = async (req: Request, res: Response) => {

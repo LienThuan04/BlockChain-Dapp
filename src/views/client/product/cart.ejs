@@ -158,16 +158,20 @@
                                             </div>
                                         </td>
                                         <td class="align-middle" style="vertical-align: middle; min-width: 120px;">
+                                            <% // prepare VND total for this row %>
+                                            <%
+                                                let variantPriceRow = 0;
+                                                if (item.product.productVariants && item.product.productVariants.length > 0) {
+                                                    const selectedVariantRow = item.product.productVariants.find(function(v) { return v.id == item.productVariantId; }) || item.product.productVariants[0];
+                                                    variantPriceRow = Number(selectedVariantRow && selectedVariantRow.priceMore ? selectedVariantRow.priceMore : 0);
+                                                }
+                                                const totalUnitPriceRow = Number(item.product.price) + variantPriceRow;
+                                                const totalLineRow = totalUnitPriceRow * Number(item.quantityProduct);
+                                            %>
+                                            <% if (typeof item.cryptoAmount !== 'undefined' && cryptoActive) { %>
+                                                <p id="crypto-display-<%= item.id %>" class="mb-0 text-muted small">~ <%= item.cryptoAmount %> <%= cryptoActive.symbol || cryptoActive.code %></p>
+                                            <% } %>
                                             <p class="mb-0 text-danger fw-bold" data-OutPutCartDetail-id="<%= item.id %>">
-                                                <%
-                                                    let variantPriceRow = 0;
-                                                    if (item.product.productVariants && item.product.productVariants.length > 0) {
-                                                        const selectedVariantRow = item.product.productVariants.find(function(v) { return v.id == item.productVariantId; }) || item.product.productVariants[0];
-                                                        variantPriceRow = Number(selectedVariantRow && selectedVariantRow.priceMore ? selectedVariantRow.priceMore : 0);
-                                                    }
-                                                    const totalUnitPriceRow = Number(item.product.price) + variantPriceRow;
-                                                    const totalLineRow = totalUnitPriceRow * Number(item.quantityProduct);
-                                                %>
                                                 <%= totalLineRow.toLocaleString('vi-VN') %> VND
                                             </p>
                                         </td>
@@ -211,9 +215,14 @@
                                 </div>
                                 <div class="py-4 mb-4 border-top border-bottom d-flex justify-content-between">
                                     <h5 class="mb-0 ps-4 me-4">Tổng cộng</h5>
-                                    <p class="mb-0 pe-4 fw-bold text-danger" data-TotalPriceTT="<%= TotalPrice %>">
-                                        <%= (TotalPrice + (TotalPrice> 0 ? 30000 : 0)).toLocaleString('vi-VN') %> VND
-                                    </p>
+                                    <div class="pe-4 text-end">
+                                        <p class="mb-0 fw-bold text-danger" data-TotalPriceTT="<%= TotalPrice %>">
+                                            <%= (TotalPrice + (TotalPrice> 0 ? 30000 : 0)).toLocaleString('vi-VN') %> VND
+                                        </p>
+                                        <% if (typeof cryptoTotal !== 'undefined' && cryptoActive) { %>
+                                            <p class="mb-0 text-muted small">Tổng giá Crypto: <span id="cart-crypto-total">~ <%= cryptoTotal %> <%= cryptoActive.symbol || cryptoActive.code %></span></p>
+                                        <% } %>
+                                    </div>
                                 </div>
                                 <form action="/handle-add-to-cart" method="POST">
                                     <table class="table table-bordered" style="display: none;">
@@ -321,6 +330,196 @@
             <!-- Template Javascript -->
             <script src="/client/js/main.js"></script>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.js" integrity="sha512-zlWWyZq71UMApAjih4WkaRpikgY9Bz1oXIW5G0fED4vk14JjGlQ1UmkGM392jEULP8jbNMiwLWdM8Z87Hu88Fw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            <script>
+                (function () {
+                    try {
+                        const cryptoActive = <%- JSON.stringify(cryptoActive || null) %>;
+                        if (!cryptoActive) return; // nothing to update
+
+                        const cryptoPriceVnd = Number(cryptoActive.priceVND) || null;
+                        const cryptoDecimals = Number(cryptoActive.decimals) || 8;
+                        const cryptoSymbol = cryptoActive.symbol || cryptoActive.code || '';
+
+                        function formatVnd(n) {
+                            return n.toLocaleString('vi-VN');
+                        }
+
+                        function formatCrypto(amount) {
+                            if (amount === null || amount === undefined || isNaN(amount)) return '';
+                            const d = Math.min(8, Math.max(0, cryptoDecimals || 8));
+                            return Number(amount).toFixed(d);
+                        }
+
+                        function updateRow(itemId) {
+                            const priceEl = document.getElementById('price-display-' + itemId);
+                            const qtyEl = document.querySelector('input[data-InputCartDetail-id="' + itemId + '"]');
+                            const selectEl = document.querySelector('select[name="variantSelect-' + itemId + '"]');
+                            const outEl = document.querySelector('[data-OutPutCartDetail-id="' + itemId + '"]');
+                            const cryptoEl = document.getElementById('crypto-display-' + itemId);
+
+                            if (!priceEl || !qtyEl || !outEl) return null;
+
+                            // prefer reading the already-rendered VND total from DOM (in case other scripts update it)
+                            let totalLineFromDom = 0;
+                            const outText = (outEl.textContent || '').trim();
+                            if (outText) {
+                                // extract digits (support commas)
+                                const digits = outText.replace(/[^0-9.-]+/g, '');
+                                totalLineFromDom = digits ? Number(digits) : 0;
+                            }
+
+                            // fallback compute if DOM value not parseable
+                            const basePrice = Number(priceEl.dataset.basePrice) || 0;
+                            let priceMore = Number(priceEl.dataset.selectedPricemore) || 0;
+                            if (selectEl) {
+                                const opt = selectEl.options[selectEl.selectedIndex];
+                                if (opt && opt.dataset && opt.dataset.pricemore) {
+                                    priceMore = Number(opt.dataset.pricemore) || 0;
+                                }
+                            }
+                            const qty = Number(qtyEl.value) || 1;
+                            const computedTotal = (basePrice + priceMore) * qty;
+
+                            const totalLine = totalLineFromDom > 0 ? totalLineFromDom : computedTotal;
+
+                            // do not overwrite VND if other scripts manage it; only set if DOM was empty
+                            if (!outText || outText === '0 VND') {
+                                outEl.textContent = formatVnd(totalLine) + ' VND';
+                            }
+
+                            // update crypto if element present
+                            if (cryptoEl && cryptoPriceVnd) {
+                                const cryptoAmount = totalLine / cryptoPriceVnd;
+                                cryptoEl.textContent = '~ ' + formatCrypto(cryptoAmount) + ' ' + cryptoSymbol;
+                            }
+                            return totalLine;
+                        }
+
+                        function updateAllAndTotal() {
+                            // Determine which items to include: if any checkbox is checked, include only checked items; otherwise include all
+                            const checkedBoxes = Array.from(document.querySelectorAll('.cart-checkbox:checked'));
+                            const includeAll = checkedBoxes.length === 0;
+
+                            const priceEls = Array.from(document.querySelectorAll('[id^="price-display-"]'));
+                            let sumCrypto = 0;
+                            let sumVnd = 0;
+
+                            priceEls.forEach(el => {
+                                const id = el.id.replace('price-display-','');
+                                const isChecked = document.querySelector('.cart-checkbox[value="' + id + '"]')?.checked;
+                                // Always accumulate VND according to includeAll rule
+                                if (includeAll || isChecked) {
+                                    const totalLine = updateRow(id);
+                                    if (totalLine) sumVnd += totalLine;
+                                }
+                                // For crypto, accumulate ONLY if the item is checked
+                                if (isChecked) {
+                                    const totalLine = updateRow(id);
+                                    if (totalLine && cryptoPriceVnd) sumCrypto += totalLine / cryptoPriceVnd;
+                                }
+                            });
+
+                            // Update subtotal DOM (Tạm tính) - there may be one or more elements with data-TotalPrice
+                            const subtotalEls = document.querySelectorAll('[data-TotalPrice]');
+                            subtotalEls.forEach(el => {
+                                el.textContent = (sumVnd > 0 ? sumVnd.toLocaleString('vi-VN') : 0) + ' VND';
+                                el.setAttribute('data-TotalPrice', sumVnd);
+                            });
+
+                            // Update total with shipping
+                            const shipping = sumVnd > 0 ? 30000 : 0;
+                            const totalWithShipping = sumVnd + shipping;
+                            const totalEls = document.querySelectorAll('[data-TotalPriceTT]');
+                            totalEls.forEach(el => {
+                                el.textContent = (totalWithShipping > 0 ? totalWithShipping.toLocaleString('vi-VN') : 0) + ' VND';
+                                el.setAttribute('data-TotalPriceTT', totalWithShipping);
+                            });
+
+                            const cartCryptoEl = document.getElementById('cart-crypto-total');
+                            if (cartCryptoEl) {
+                                if (checkedBoxes.length === 0) {
+                                    // no selection -> crypto total should be 0 until user selects items
+                                    cartCryptoEl.textContent = '~ 0 ' + cryptoSymbol;
+                                } else {
+                                    cartCryptoEl.textContent = '~ ' + formatCrypto(sumCrypto) + ' ' + cryptoSymbol;
+                                }
+                            }
+                        }
+
+                        // attach listeners to variant selects and quantity inputs
+                        document.querySelectorAll('select[name^="variantSelect-"]').forEach(sel => {
+                            sel.addEventListener('change', function (e) {
+                                const match = this.name.match(/variantSelect-(\d+)/);
+                                if (match) updateRow(match[1]);
+                                updateAllAndTotal();
+                            });
+                        });
+
+                        document.querySelectorAll('input[data-InputCartDetail-id]').forEach(inp => {
+                            inp.addEventListener('input', function (e) {
+                                const id = this.getAttribute('data-InputCartDetail-id');
+                                updateRow(id);
+                                updateAllAndTotal();
+                            });
+                            inp.addEventListener('change', function () {
+                                const id = this.getAttribute('data-InputCartDetail-id');
+                                updateRow(id);
+                                updateAllAndTotal();
+                            });
+                        });
+
+                        // attach listeners to item checkboxes so totals update when selection changes
+                        document.querySelectorAll('.cart-checkbox').forEach(cb => {
+                            cb.addEventListener('change', function () {
+                                updateAllAndTotal();
+                            });
+                        });
+
+                        // select all handler
+                        const selectAllEl = document.getElementById('selectAll');
+                        if (selectAllEl) {
+                            selectAllEl.addEventListener('change', function () {
+                                const checked = !!this.checked;
+                                document.querySelectorAll('.cart-checkbox').forEach(cb => cb.checked = checked);
+                                updateAllAndTotal();
+                            });
+                        }
+
+                        // also attach to plus/minus buttons in same cell to catch clicks that change qty via other handlers
+                        document.querySelectorAll('.btn-minus, .btn-plus').forEach(btn => {
+                            btn.addEventListener('click', function () {
+                                setTimeout(updateAllAndTotal, 200); // delay to allow other handlers to update the input
+                            });
+                        });
+
+                        // Watch for DOM changes on the output price cells in case other scripts update them asynchronously
+                        const observer = new MutationObserver(function (mutationsList) {
+                            let needRecalc = false;
+                            const updatedIds = new Set();
+                            for (const m of mutationsList) {
+                                const target = m.target;
+                                if (target && target.getAttribute && target.getAttribute('data-OutPutCartDetail-id')) {
+                                    const id = target.getAttribute('data-OutPutCartDetail-id');
+                                    updatedIds.add(id);
+                                    needRecalc = true;
+                                }
+                            }
+                            if (needRecalc) {
+                                updatedIds.forEach(id => updateRow(id));
+                                updateAllAndTotal();
+                            }
+                        });
+                        document.querySelectorAll('[data-OutPutCartDetail-id]').forEach(el => {
+                            observer.observe(el, { characterData: true, childList: true, subtree: true });
+                        });
+
+                        // initial compute
+                        updateAllAndTotal();
+                    } catch (err) {
+                        console.error('cart crypto update error', err);
+                    }
+                })();
+            </script>
 </body>
 
 </html>
