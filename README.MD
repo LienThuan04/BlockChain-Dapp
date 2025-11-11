@@ -485,8 +485,16 @@ trong file `db.ts` có các thông tin sau để kết nối với database:
     ```bash
         npx prisma generate
     ```
+- 2 để đưa code trong file `schema.prisma` để tạo bảng vào database:
+    ```bash
+        npx prisma db push
+    ```
+- 3 kéo các bảng( hoặc lấy cấu trúc bảng đang có trong database để ghi vào file `schema.prisma` để tạo thành code khung. ) về file `schema.prisma`
+    ```bash
+        npx prisma db pull
+    ```
 
-- 2 đưa code đó vào database đồng thời tạo migrate cho prisma để lưu lại lịch sử cập nhật code của database
+- 4 đưa code đó vào database đồng thời tạo migrate cho prisma để lưu lại lịch sử cập nhật code của database ( lưu ý: code khung số 2 phải có trước mới chạy được lệnh này ).
     ```bash
         npx prisma migrate dev --name "tên phần cập nhật đó"
     ```
@@ -624,6 +632,43 @@ Tạo kiểu dữ liệu mới và định nghĩa nó để dùng được trong
         };
     ```
     Chi tiết có thể tham khảo file ở **[src/types/index.dt.ts](https://gitlab.com/LienThuan9697/nodejs_express/-/blob/master/src/types/index.dt.ts?ref_type=heads)**
+
+# Build docker compose với mysql:
+- viết file docker-compose.yaml để build database bằng docker như sau:
+```bash
+version: '3.8' # phiên bản docker-compose
+services: # định nghĩa các dịch vụ
+  db: # tên dịch vụ
+    image: mysql:8.0 # sử dụng image mysql phiên bản 8.0
+    container_name: DbMysql_LaptopShop_blockchain # tên container
+    restart: unless-stopped # tự động khởi động lại trừ khi bị dừng thủ công
+    environment: # thiết lập biến môi trường
+      MYSQL_ROOT_PASSWORD: LianHarman2049 # pass của user root
+      MYSQL_DATABASE: LaptopShopDB # tên database muốn tạo
+      MYSQL_USER: LianHarman # biến này đặt để tạo user mới và cấp quyền cho user đó
+      MYSQL_PASSWORD: LianHarman2049 # pass của user mới tạo
+    ports: # ánh xạ cổng
+      - "3307:3306" # ánh xạ cổng 3306 trong container ra cổng 3307 trên host
+    # volumes: # gắn volume để lưu trữ dữ liệu
+    #   - db_data:/var/lib/mysql # lưu dữ liệu mysql vào volume db_data
+    # networks: # Specify the network
+    #   - mysql_network
+```
+- Sau đó chạy lệnh sau để build cơ sở dữ liệu từ file này(nhớ mở cmd ở file này !):
+```bash
+docker compose -p this_name_container up -d
+```
+docker compose: Đây là lệnh dùng để chạy docker-compose.yml. Nó sẽ tạo và quản lý nhiều container cùng 1 lúc theo cấu hình trong file.
+-p: Nó dùng để đặt tên chung cho tất cả những thứ mà compose tạo ra từ Tên container,Tên network, Tên volume (nếu có).
+up: Tạo container và chạy chúng, Nếu container chưa tồn tại → Docker sẽ build và chạy, Nếu container đã tồn tại → Docker chạy lại.
+-d: detached mode (chạy ngầm) không chiếm cmd hiện tại đang gõ lệnh này.
+ - Sau khi build có thể kiểm tra container có chạy hay chưa bằng lệnh:
+ ```bash
+ docker ps
+```
+hoặc vào docker để xem.
+
+
 
 
 
