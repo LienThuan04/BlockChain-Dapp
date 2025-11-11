@@ -672,7 +672,9 @@ up: Tạo container và chạy chúng, Nếu container chưa tồn tại → Doc
 ```
 hoặc vào docker để xem.
 
-- Build 
+- Build Dockerfile cho dự án như thế nào có thể xem Docker file của dự án này [Dockerfile](https://github.com/LienThuan04/BlockChain-Dapp/blob/master/Dockerfile).
+
+- cách tạo compose dự án backend này cùng với database mysql nằm ở đây: [docker-compose.yaml](https://github.com/LienThuan04/BlockChain-Dapp/blob/master/docker/nodejs/docker-compose.yaml).
 
 
 
