@@ -6,9 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon",
-    "start": "nodemon",
-    "build": "rmdir /s /q dist 2>nul & tsc -p tsconfig.build.json && xcopy src\\views dist\\views /E /I /Y",
-    "start:prod": "npm run build && node -r module-alias/register dist/app.js",
+    "start": "node -r module-alias/register dist/app.js",
+    "build:linux": "rm -rf dist && tsc -p tsconfig.build.json && cp -r src/views dist/views",
+    "build:windows": "rmdir /s /q dist 2>nul & tsc -p tsconfig.build.json && xcopy src\\views dist\\views /E /I /Y",
+    "start:windows": "npm run build:windows && node -r module-alias/register dist/app.js",
+    "start:linux": "npm run build:linux && node -r module-alias/register dist/app.js",
     "start:debug": "nodemon --inspect=9229 -e ts,tsx --exec node -r ts-node/register -r tsconfig-paths/register ./src/app.ts"
   },
   "nodemonConfig": {
@@ -34,7 +36,6 @@
   "author": "LianHarman",
   "license": "ISC",
   "_moduleAliases": {
-    
     "config": "dist/config",
     "controllers": "dist/controllers",
     "models": "dist/models",

@@ -1,0 +1,34 @@
+# build docker compose file for nodejs app with DB mysql
+
+# DB
+version: '3.8' # phiên bản docker-compose
+services: # định nghĩa các dịch vụ
+  db: # tên dịch vụ
+    image: mysql:8.0 # sử dụng image mysql phiên bản 8.0
+    container_name: DbMysql_LaptopShop_blockchain # tên container
+    restart: unless-stopped # tự động khởi động lại trừ khi bị dừng thủ công
+    environment: # thiết lập biến môi trường
+      MYSQL_ROOT_PASSWORD: LianHarman2049 # pass của user root
+      MYSQL_DATABASE: LaptopShopDB # tên database muốn tạo
+      MYSQL_USER: LianHarman # biến này đặt để tạo user mới và cấp quyền cho user đó
+      MYSQL_PASSWORD: LianHarman2049 # pass của user mới tạo
+    ports: # ánh xạ cổng
+      - "3307:3306" # ánh xạ cổng 3306 trong container ra cổng 3307 trên host
+    # volumes: # gắn volume để lưu trữ dữ liệu
+    #   - db_data:/var/lib/mysql # lưu dữ liệu mysql vào volume db_data
+    # networks: # Specify the network
+    #   - mysql_network
+  # chạy dịch vụ 
+  server:
+    build:
+      context: ../../ # thư mục hiện tại
+      dockerfile: Dockerfile # sử dụng Dockerfile trong thư mục hiện tại
+    restart: unless-stopped # tự động khởi động lại trừ khi bị dừng thủ công
+    container_name: Nodejs_LaptopShop_blockchain # tên container
+    depends_on: # chỉ định phụ thuộc vào dịch vụ db
+      - db
+    environment:
+      # kết nối DB từ trong Docker compose: dùng hostname service `db` và cổng nội bộ 3306
+      DATABASE_URL: "mysql://root:LianHarman2049@db:3306/LaptopShopDB"
+    ports:
+      - 8081:8080 # ánh xạ cổng 8080 trong container ra cổng 8080 trên host

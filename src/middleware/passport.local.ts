@@ -55,5 +55,5 @@ const configPassportLocal = () => {
         });
     });
 }
-
+//  thời gian kiểm tra session khi nó hết hạn ở file src/app.ts
 export default configPassportLocal;
