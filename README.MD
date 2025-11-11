@@ -659,9 +659,13 @@ services: # định nghĩa các dịch vụ
 docker compose -p this_name_container up -d
 ```
 docker compose: Đây là lệnh dùng để chạy docker-compose.yml. Nó sẽ tạo và quản lý nhiều container cùng 1 lúc theo cấu hình trong file.
+
 -p: Nó dùng để đặt tên chung cho tất cả những thứ mà compose tạo ra từ Tên container,Tên network, Tên volume (nếu có).
+
 up: Tạo container và chạy chúng, Nếu container chưa tồn tại → Docker sẽ build và chạy, Nếu container đã tồn tại → Docker chạy lại.
+
 -d: detached mode (chạy ngầm) không chiếm cmd hiện tại đang gõ lệnh này.
+
  - Sau khi build có thể kiểm tra container có chạy hay chưa bằng lệnh:
  ```bash
  docker ps
