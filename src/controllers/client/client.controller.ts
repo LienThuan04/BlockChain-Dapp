@@ -83,10 +83,10 @@ const GetCartPage = async (req: Request, res: Response) => {
             return res.render('client/product/cart.ejs', { cartDetails: cartWithCrypto, TotalPrice: TotalPrice, cryptoTotal, cryptoActive: crypto, targets: Target, factories: Factory });
         } catch (e) {
             console.warn('Could not compute crypto price for cart', e);
-            return res.render('client/product/cart.ejs', { cartDetails: detailCart, TotalPrice: TotalPrice, targets: Target, factories: Factory });
+            return res.render('client/product/cart.ejs', { cartDetails: detailCart, TotalPrice: TotalPrice, targets: Target, factories: Factory, cryptoActive: null });
         }
     }
-    return res.render('client/product/cart.ejs', { cartDetails: [], TotalPrice: 0, targets: Target, factories: Factory });
+    return res.render('client/product/cart.ejs', { cartDetails: [], TotalPrice: 0, targets: Target, factories: Factory, cryptoActive: null });
 
     // const cartDetails = await GetCartDetailsForUser(user.id); // Implement this service function
 
