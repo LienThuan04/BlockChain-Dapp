@@ -212,7 +212,7 @@
                                                                             <p class="mb-0 mt-4 text-danger fw-bold" data-OutPutCartDetail-id="<%= item.id %>">
                                                                                 <%= (unitPrice * item.quantity).toLocaleString('vi-VN') %> VND
                                                                             </p>
-                                                                            <% if (typeof item.lineCrypto !== 'undefined' && typeof cryptoActive !== 'undefined') { %>
+                                                                            <% if (String(order.paymentMethod || '').toUpperCase() === 'CRYPTO' && typeof item.lineCrypto !== 'undefined' && typeof cryptoActive !== 'undefined') { %>
                                                                                 <div class="text-muted small">~ <%= item.lineCrypto %> <%= cryptoActive.symbol || cryptoActive.code %></div>
                                                                             <% } %>
                                                                         </td>
@@ -229,15 +229,20 @@
                                                 </div>
                                                 <div class="d-flex flex-wrap align-items-center justify-content-end g-3"
                                                     style="gap: 1rem;">
+                                                    <% const _pm = String(order.paymentMethod || '').toUpperCase(); const _ps = String(order.paymentStatus || '').toUpperCase(); const _isPaid = (_pm === 'PAYPAL' || _pm === 'CRYPTO') && (_ps === 'PAID' || _ps === 'PAYMENT_PAID'); %>
                                                     <p class="mb-1 mx-2">Phương thức thanh toán: <span
                                                             class="fw-bold text-success"><%= order.paymentMethod %>
-                                                        </span></p>
+                                                        </span>
+                                                        <% if (_isPaid) { %>
+                                                            <span class="badge bg-success ms-2">Đã thanh toán</span>
+                                                        <% } %>
+                                                    </p>
                                                     <p class="mb-1 mx-2">Số lượng sản phẩm: <span
                                                             class="fw-bold text-warning"><%= order.orderDetails.map(item => item.quantity).reduce((a, b) => a + b, 0) %>
                                                         </span></p>
                             <p class="mb-1 mx-4">Tổng số tiền: <span
                                 class="fw-bold text-danger"><%= order.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
-                            <% if (typeof order.cryptoTotal !== 'undefined' && typeof cryptoActive !== 'undefined') { %>
+                            <% if (String(order.paymentMethod || '').toUpperCase() === 'CRYPTO' && typeof order.cryptoTotal !== 'undefined' && typeof cryptoActive !== 'undefined') { %>
                             <p class="mb-1 mx-4 text-muted small">Crypto total: ~ <%= order.cryptoTotal %> <%= cryptoActive.symbol || cryptoActive.code %></p>
                             <% } %>
                                                 </div>
@@ -391,14 +396,22 @@
                                                 </div>
                                                 <div class="d-flex flex-wrap align-items-center justify-content-end g-3"
                                                     style="gap: 1rem;">
+                                                    <% const _pm = String(order.paymentMethod || '').toUpperCase(); const _ps = String(order.paymentStatus || '').toUpperCase(); const _isPaid = (_pm === 'PAYPAL' || _pm === 'CRYPTO') && (_ps === 'PAID' || _ps === 'PAYMENT_PAID'); %>
                                                     <p class="mb-1 mx-2">Phương thức thanh toán: <span
                                                             class="fw-bold text-success"><%= order.paymentMethod %>
-                                                        </span></p>
+                                                        </span>
+                                                        <% if (_isPaid) { %>
+                                                            <span class="badge bg-success ms-2">Đã thanh toán</span>
+                                                        <% } %>
+                                                    </p>
                                                     <p class="mb-1 mx-2">Số lượng sản phẩm: <span
                                                             class="fw-bold text-warning"><%= order.orderDetails.map(item => item.quantity).reduce((a, b) => a + b, 0) %>
                                                         </span></p>
-                                                    <p class="mb-1 mx-4">Tổng số tiền: <span
-                                                            class="fw-bold text-danger"><%= order.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
+                            <p class="mb-1 mx-4">Tổng số tiền: <span
+                                class="fw-bold text-danger"><%= order.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
+                            <% if (String(order.paymentMethod || '').toUpperCase() === 'CRYPTO' && typeof order.cryptoTotal !== 'undefined' && typeof cryptoActive !== 'undefined') { %>
+                            <p class="mb-1 mx-4 text-muted small">Crypto total: ~ <%= order.cryptoTotal %> <%= cryptoActive.symbol || cryptoActive.code %></p>
+                            <% } %>
                                                 </div>
                                             </div>
                                             <div class="mt-3 d-flex justify-content-end w-100">
@@ -533,14 +546,22 @@
                                                 </div>
                                                 <div class="d-flex flex-wrap align-items-center justify-content-end g-3"
                                                     style="gap: 1rem;">
+                                                    <% const _pm = String(order.paymentMethod || '').toUpperCase(); const _ps = String(order.paymentStatus || '').toUpperCase(); const _isPaid = (_pm === 'PAYPAL' || _pm === 'CRYPTO') && (_ps === 'PAID' || _ps === 'PAYMENT_PAID'); %>
                                                     <p class="mb-1 mx-2">Phương thức thanh toán: <span
                                                             class="fw-bold text-success"><%= order.paymentMethod %>
-                                                        </span></p>
+                                                        </span>
+                                                        <% if (_isPaid) { %>
+                                                            <span class="badge bg-success ms-2">Đã thanh toán</span>
+                                                        <% } %>
+                                                    </p>
                                                     <p class="mb-1 mx-2">Số lượng sản phẩm: <span
                                                             class="fw-bold text-warning"><%= order.orderDetails.map(item => item.quantity).reduce((a, b) => a + b, 0) %>
                                                         </span></p>
-                                                    <p class="mb-1 mx-4">Tổng số tiền: <span
-                                                            class="fw-bold text-danger"><%= order.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
+                            <p class="mb-1 mx-4">Tổng số tiền: <span
+                                class="fw-bold text-danger"><%= order.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
+                            <% if (String(order.paymentMethod || '').toUpperCase() === 'CRYPTO' && typeof order.cryptoTotal !== 'undefined' && typeof cryptoActive !== 'undefined') { %>
+                            <p class="mb-1 mx-4 text-muted small">Crypto total: ~ <%= order.cryptoTotal %> <%= cryptoActive.symbol || cryptoActive.code %></p>
+                            <% } %>
                                                 </div>
                                             </div>
                                             <div class="mt-3 d-flex justify-content-end w-100">
@@ -675,14 +696,22 @@
                                                 </div>
                                                 <div class="d-flex flex-wrap align-items-center justify-content-end g-3"
                                                     style="gap: 1rem;">
+                                                    <% const _pm = String(order.paymentMethod || '').toUpperCase(); const _ps = String(order.paymentStatus || '').toUpperCase(); const _isPaid = (_pm === 'PAYPAL' || _pm === 'CRYPTO') && (_ps === 'PAID' || _ps === 'PAYMENT_PAID'); %>
                                                     <p class="mb-1 mx-2">Phương thức thanh toán: <span
                                                             class="fw-bold text-success"><%= order.paymentMethod %>
-                                                        </span></p>
+                                                        </span>
+                                                        <% if (_isPaid) { %>
+                                                            <span class="badge bg-success ms-2">Đã thanh toán</span>
+                                                        <% } %>
+                                                    </p>
                                                     <p class="mb-1 mx-2">Số lượng sản phẩm: <span
                                                             class="fw-bold text-warning"><%= order.orderDetails.map(item => item.quantity).reduce((a, b) => a + b, 0) %>
                                                         </span></p>
-                                                    <p class="mb-1 mx-4">Tổng số tiền: <span
-                                                            class="fw-bold text-danger"><%= order.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
+                            <p class="mb-1 mx-4">Tổng số tiền: <span
+                                class="fw-bold text-danger"><%= order.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
+                            <% if (String(order.paymentMethod || '').toUpperCase() === 'CRYPTO' && typeof order.cryptoTotal !== 'undefined' && typeof cryptoActive !== 'undefined') { %>
+                            <p class="mb-1 mx-4 text-muted small">Crypto total: ~ <%= order.cryptoTotal %> <%= cryptoActive.symbol || cryptoActive.code %></p>
+                            <% } %>
                                                 </div>
                                             </div>
                                             <div class="mt-3 d-flex justify-content-end w-100">
@@ -817,9 +846,14 @@
                                                 </div>
                                                 <div class="d-flex flex-wrap align-items-center justify-content-end g-3"
                                                     style="gap: 1rem;">
+                                                    <% const _pm = String(order.paymentMethod || '').toUpperCase(); const _ps = String(order.paymentStatus || '').toUpperCase(); const _isPaid = (_pm === 'PAYPAL' || _pm === 'CRYPTO') && (_ps === 'PAID' || _ps === 'PAYMENT_PAID'); %>
                                                     <p class="mb-1 mx-2">Phương thức thanh toán: <span
                                                             class="fw-bold text-success"><%= order.paymentMethod %>
-                                                        </span></p>
+                                                        </span>
+                                                        <% if (_isPaid) { %>
+                                                            <span class="badge bg-success ms-2">Đã thanh toán</span>
+                                                        <% } %>
+                                                    </p>
                                                     <p class="mb-1 mx-2">Số lượng sản phẩm: <span
                                                             class="fw-bold text-warning"><%= order.orderDetails.map(item => item.quantity).reduce((a, b) => a + b, 0) %>
                                                         </span></p>
@@ -959,9 +993,14 @@
                                                 </div>
                                                 <div class="d-flex flex-wrap align-items-center justify-content-end g-3"
                                                     style="gap: 1rem;">
+                                                    <% const _pm = String(order.paymentMethod || '').toUpperCase(); const _ps = String(order.paymentStatus || '').toUpperCase(); const _isPaid = (_pm === 'PAYPAL' || _pm === 'CRYPTO') && (_ps === 'PAID' || _ps === 'PAYMENT_PAID'); %>
                                                     <p class="mb-1 mx-2">Phương thức thanh toán: <span
                                                             class="fw-bold text-success"><%= order.paymentMethod %>
-                                                        </span></p>
+                                                        </span>
+                                                        <% if (_isPaid) { %>
+                                                            <span class="badge bg-success ms-2">Đã thanh toán</span>
+                                                        <% } %>
+                                                    </p>
                                                     <p class="mb-1 mx-2">Số lượng sản phẩm: <span
                                                             class="fw-bold text-warning"><%= order.orderDetails.map(item => item.quantity).reduce((a, b) => a + b, 0) %>
                                                         </span></p>
@@ -1101,9 +1140,14 @@
                                                 </div>
                                                 <div class="d-flex flex-wrap align-items-center justify-content-end g-3"
                                                     style="gap: 1rem;">
+                                                    <% const _pm = String(order.paymentMethod || '').toUpperCase(); const _ps = String(order.paymentStatus || '').toUpperCase(); const _isPaid = (_pm === 'PAYPAL' || _pm === 'CRYPTO') && (_ps === 'PAID' || _ps === 'PAYMENT_PAID'); %>
                                                     <p class="mb-1 mx-2">Phương thức thanh toán: <span
                                                             class="fw-bold text-success"><%= order.paymentMethod %>
-                                                        </span></p>
+                                                        </span>
+                                                        <% if (_isPaid) { %>
+                                                            <span class="badge bg-success ms-2">Đã thanh toán</span>
+                                                        <% } %>
+                                                    </p>
                                                     <p class="mb-1 mx-2">Số lượng sản phẩm: <span
                                                             class="fw-bold text-warning"><%= order.orderDetails.map(item => item.quantity).reduce((a, b) => a + b, 0) %>
                                                         </span></p>
@@ -1261,9 +1305,14 @@
                                                 </div>
                                                 <div class="d-flex flex-wrap align-items-center justify-content-end g-3"
                                                     style="gap: 1rem;">
+                                                    <% const _pm = String(order.paymentMethod || '').toUpperCase(); const _ps = String(order.paymentStatus || '').toUpperCase(); const _isPaid = (_pm === 'PAYPAL' || _pm === 'CRYPTO') && (_ps === 'PAID' || _ps === 'PAYMENT_PAID'); %>
                                                     <p class="mb-1 mx-2">Phương thức thanh toán: <span
                                                             class="fw-bold text-success"><%= order.paymentMethod %>
-                                                        </span></p>
+                                                        </span>
+                                                        <% if (_isPaid) { %>
+                                                            <span class="badge bg-success ms-2">Đã thanh toán</span>
+                                                        <% } %>
+                                                    </p>
                                                     <p class="mb-1 mx-2">Số lượng sản phẩm: <span
                                                             class="fw-bold text-warning"><%= order.orderDetails.map(item => item.quantity).reduce((a, b) => a + b, 0) %>
                                                         </span></p>
@@ -1403,9 +1452,14 @@
                                                 </div>
                                                 <div class="d-flex flex-wrap align-items-center justify-content-end g-3"
                                                     style="gap: 1rem;">
+                                                    <% const _pm = String(order.paymentMethod || '').toUpperCase(); const _ps = String(order.paymentStatus || '').toUpperCase(); const _isPaid = (_pm === 'PAYPAL' || _pm === 'CRYPTO') && (_ps === 'PAID' || _ps === 'PAYMENT_PAID'); %>
                                                     <p class="mb-1 mx-2">Phương thức thanh toán: <span
                                                             class="fw-bold text-success"><%= order.paymentMethod %>
-                                                        </span></p>
+                                                        </span>
+                                                        <% if (_isPaid) { %>
+                                                            <span class="badge bg-success ms-2">Đã thanh toán</span>
+                                                        <% } %>
+                                                    </p>
                                                     <p class="mb-1 mx-2">Số lượng sản phẩm: <span
                                                             class="fw-bold text-warning"><%= order.orderDetails.map(item => item.quantity).reduce((a, b) => a + b, 0) %>
                                                         </span></p>
@@ -1545,9 +1599,14 @@
                                                 </div>
                                                 <div class="d-flex flex-wrap align-items-center justify-content-end g-3"
                                                     style="gap: 1rem;">
+                                                    <% const _pm = String(order.paymentMethod || '').toUpperCase(); const _ps = String(order.paymentStatus || '').toUpperCase(); const _isPaid = (_pm === 'PAYPAL' || _pm === 'CRYPTO') && (_ps === 'PAID' || _ps === 'PAYMENT_PAID'); %>
                                                     <p class="mb-1 mx-2">Phương thức thanh toán: <span
                                                             class="fw-bold text-success"><%= order.paymentMethod %>
-                                                        </span></p>
+                                                        </span>
+                                                        <% if (_isPaid) { %>
+                                                            <span class="badge bg-success ms-2">Đã thanh toán</span>
+                                                        <% } %>
+                                                    </p>
                                                     <p class="mb-1 mx-2">Số lượng sản phẩm: <span
                                                             class="fw-bold text-warning"><%= order.orderDetails.map(item => item.quantity).reduce((a, b) => a + b, 0) %>
                                                         </span></p>

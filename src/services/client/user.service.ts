@@ -276,6 +276,16 @@ const PlaceOrder = async (user: UserRole,
                     };
                 }) ?? [];
 
+                // When creating nested orderDetails, do NOT include the cart-detail IDs
+                // (those are primary keys for cartdetail records). Prisma will attempt to
+                // set the primary key if `id` is present and that causes UNIQUE PRIMARY errors.
+                const orderDetailsCreateData = DataOrderCartDetail.map(({ id, ...rest }) => ({
+                    price: rest.price,
+                    quantity: rest.quantity,
+                    productId: rest.productId,
+                    productVariantId: rest.productVariantId
+                }));
+
                 const CreateOrder = await tx.order.create({
                     data: {
                         userId: user.id,
@@ -289,7 +299,7 @@ const PlaceOrder = async (user: UserRole,
                         totalPrice: DataOrderCartDetail.reduce((acc, item) => acc + (item.price * (item.quantity ? item.quantity : 0)), 0) + 30000,
                         ...(orderData.paymentRef ? { paymentRef: orderData.paymentRef } : null),
                         orderDetails: {
-                            create: DataOrderCartDetail as any,
+                            create: orderDetailsCreateData as any,
                         },
 
                     }
@@ -514,11 +524,13 @@ const CancelOrderById = async (orderId: number, user: UserRole) => {
         }
     });
     if (!order) {
-        return false;
+        return { success: false, message: 'Order not found' };
     }
+    // Prepare refund result details to return to caller
+    const refundResult: any = { attempted: false, method: null, success: false, txHash: null, message: '' };
     // If paid via PayPal, attempt refund
     try {
-        if (order.paymentMethod === 'PAYPAL' && order.paymentStatus === 'PAYMENT_PAID' && order.paymentRef) {
+    if (String(order.paymentMethod || '').toUpperCase() === 'PAYPAL' && (order.paymentStatus === 'PAYMENT_PAID' || order.paymentStatus === 'PAID') && order.paymentRef) {
             // paymentRef may contain 'PayPalCapture:<captureId>' or 'PayPalOrder:<orderId>'
             const ref = order.paymentRef as string;
             const captureMatch = ref.match(/PayPalCapture:?(.*)/i);
@@ -532,10 +544,18 @@ const CancelOrderById = async (orderId: number, user: UserRole) => {
                     console.log('PayPal refund response for order', orderId, JSON.stringify(refundResp?.result));
                     // update paymentStatus
                     await prisma.order.update({ where: { id: orderId }, data: { paymentStatus: 'REFUNDED' } });
+                    refundResult.attempted = true;
+                    refundResult.method = 'PAYPAL';
+                    refundResult.success = true;
+                    refundResult.message = 'PayPal refund successful';
                 } catch (refundErr) {
                     console.error('Error refunding PayPal capture for order', orderId, refundErr);
                     // proceed to cancel but keep paymentStatus as-is or mark as REFUND_FAILED
                     await prisma.order.update({ where: { id: orderId }, data: { paymentStatus: 'REFUND_FAILED' } });
+                    refundResult.attempted = true;
+                    refundResult.method = 'PAYPAL';
+                    refundResult.success = false;
+                    (refundResult as any).message = String((refundErr as any)?.message || refundErr);
                 }
             }
         }
@@ -545,7 +565,11 @@ const CancelOrderById = async (orderId: number, user: UserRole) => {
 
     // If paid via CRYPTO, attempt on-chain refund from active admin wallet to buyer
     try {
-        if (order.paymentMethod === 'CRYPTO' && order.paymentStatus === 'PAID') {
+    // Only attempt an on-chain crypto refund when the original payment method
+    // was explicitly CRYPTO and the order shows a paid status. This avoids
+    // attempting or announcing crypto refunds for non-crypto orders that
+    // happen to have a generic 'PAID' flag.
+    if (String(order.paymentMethod || '').toUpperCase() === 'CRYPTO' && (order.paymentStatus === 'PAID' || order.paymentStatus === 'PAYMENT_PAID')) {
             console.log('🔄 [REFUND] Starting crypto refund for order', orderId);
             const origTx = await prisma.cryptoTransaction.findFirst({ where: { orderId: order.id }, include: { cryptocurrency: true } });
             if (origTx && origTx.fromAddress) {
@@ -628,6 +652,11 @@ const CancelOrderById = async (orderId: number, user: UserRole) => {
                         console.log('✅ Transaction receipt:', sendReceipt.transactionHash);
 
                         await prisma.cryptoTransaction.update({ where: { id: refundRecord.id }, data: { transactionHash: sendReceipt.transactionHash || '', status: 'SUCCESS' } });
+                        refundResult.attempted = true;
+                        refundResult.method = 'CRYPTO';
+                        refundResult.success = true;
+                        (refundResult as any).txHash = sendReceipt.transactionHash || null;
+                        (refundResult as any).message = 'Crypto refund successful';
                         // Mark original transaction as REFUNDED
                         if (origTx) {
                             await prisma.cryptoTransaction.update({ where: { id: origTx.id }, data: { status: 'REFUNDED' } });
@@ -639,6 +668,10 @@ const CancelOrderById = async (orderId: number, user: UserRole) => {
                         console.error('❌ Error sending refund transaction for order', orderId, ':', txErr instanceof Error ? txErr.message : txErr);
                         if (txErr instanceof Error) console.error('Stack:', txErr.stack);
                         await prisma.order.update({ where: { id: orderId }, data: { paymentStatus: 'REFUND_FAILED' } });
+                        refundResult.attempted = true;
+                        refundResult.method = 'CRYPTO';
+                        refundResult.success = false;
+                        (refundResult as any).message = String((txErr as any)?.message || txErr);
                     }
                 }
             } else {
@@ -650,6 +683,11 @@ const CancelOrderById = async (orderId: number, user: UserRole) => {
         if (cryptoErr instanceof Error && cryptoErr.message.includes('Cannot find module')) {
             console.error('⚠️ Make sure web3 npm package is installed: npm install web3 --legacy-peer-deps');
         }
+        // record crypto error
+    refundResult.attempted = refundResult.attempted || false;
+    refundResult.method = refundResult.method || 'CRYPTO';
+    refundResult.success = refundResult.success || false;
+    (refundResult as any).message = (refundResult as any).message || String((cryptoErr as any)?.message || cryptoErr);
     }
 
     // Restore product quantities and mark order cancelled
@@ -670,7 +708,7 @@ const CancelOrderById = async (orderId: number, user: UserRole) => {
 
     // Mark order as cancelled
     await prisma.order.update({ where: { id: orderId }, data: { statusOrder: 'CANCELLED' } });
-    return true;
+    return { success: true, refund: refundResult };
 };
 
 export {

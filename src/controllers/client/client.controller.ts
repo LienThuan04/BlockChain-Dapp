@@ -374,13 +374,18 @@ const PostCancelOrder = async (req: Request, res: Response) => {
     };
     
     try {
+        // Fetch order to decide which refund/message to show (crypto vs non-crypto)
+        const orderDetail = await GetDetailHistoryById(IdToNumber, user);
+        const paymentMethodOfOrder = orderDetail ? String(orderDetail.paymentMethod || '').toUpperCase() : '';
+
         const result = await CancelOrderById(IdToNumber, user);
-        if (!result) {
+        // result is now an object: { success: boolean, refund?: { attempted, method, success, txHash, message }, message?: string }
+        if (!result || result.success === false) {
             // If AJAX request, return JSON
             if (req.headers['accept']?.includes('application/json')) {
                 return res.status(500).json({ 
                     success: false, 
-                    message: 'Hủy đơn hàng thất bại' 
+                    message: result && result.message ? result.message : 'Hủy đơn hàng thất bại' 
                 });
             }
             return res.render('status/500.ejs');
@@ -388,15 +393,27 @@ const PostCancelOrder = async (req: Request, res: Response) => {
         
         // If AJAX request, return JSON with success message
         if (req.headers['accept']?.includes('application/json')) {
+            // For crypto orders, the system may have performed an on-chain refund; for others,
+            // just report simple cancellation success without mentioning crypto refunds.
+            // Build a response that includes refund details (if any)
+            const refundInfo = (result && result.refund) ? result.refund : null;
+            const successMessage = refundInfo && refundInfo.method === 'CRYPTO' && refundInfo.success ? 'Hủy đơn hàng và hoàn tiền thành công!' : 'Hủy đơn hàng thành công!';
             return res.json({ 
                 success: true, 
-                message: 'Hủy đơn hàng và hoàn tiền thành công!',
-                orderId: IdToNumber
+                message: successMessage,
+                orderId: IdToNumber,
+                refund: refundInfo
             });
         }
         
         // Otherwise redirect as before
-        return res.redirect(`/order-history/${IdToNumber}?refund=success`);
+        // Redirect with a different query param when not crypto to avoid showing crypto-specific UI
+        // If a crypto refund was performed successfully, keep the old redirect param for backward compatibility
+        const refundInfo = (result && result.refund) ? result.refund : null;
+        if (refundInfo && refundInfo.method === 'CRYPTO' && refundInfo.success) {
+            return res.redirect(`/order-history/${IdToNumber}?refund=success`);
+        }
+        return res.redirect(`/order-history/${IdToNumber}`);
     } catch (error) {
         console.error('Error in PostCancelOrder:', error);
         if (req.headers['accept']?.includes('application/json')) {

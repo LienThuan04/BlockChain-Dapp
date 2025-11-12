@@ -343,6 +343,45 @@
                     </div>
                 </div>
             </div>
+            <!-- Modal to prompt MetaMask install when user doesn't have it -->
+            <div class="modal fade" id="installMetamaskModal" tabindex="-1" role="dialog" aria-labelledby="installMetamaskLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="installMetamaskLabel">Cần cài Metamask</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Để thanh toán bằng tiền ảo bạn cần cài đặt MetaMask (ví trình duyệt). Bạn có thể cài đặt MetaMask ngay bây giờ hoặc quay lại để chọn phương thức thanh toán khác.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <a id="installMetaMaskBtn" class="btn btn-primary" target="_blank" rel="noopener" href="https://metamask.io/download.html">Cài MetaMask</a>
+                            <button type="button" id="stayChooseOtherBtn" class="btn btn-secondary" data-bs-dismiss="modal">Ở lại, chọn phương thức khác</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                // Wire install modal buttons: stay button simply closes modal (data-bs-dismiss handles it).
+                document.addEventListener('DOMContentLoaded', function () {
+                    const stayBtn = document.getElementById('stayChooseOtherBtn');
+                    if (stayBtn) {
+                        stayBtn.addEventListener('click', function () {
+                            try {
+                                // Optionally, uncheck Crypto radio so user can pick another method
+                                const cryptoRadio = document.querySelector('input[name="paymentMethod"][value="CRYPTO"]');
+                                if (cryptoRadio) cryptoRadio.checked = false;
+                                // Enable checkout button if it was disabled
+                                const btn = document.getElementById('btnCheckoutPay');
+                                if (btn) { btn.disabled = false; btn.innerText = 'Tiến hành thanh toán'; }
+                            } catch (e) {
+                                console.warn('Error handling stay button:', e);
+                            }
+                        });
+                    }
+                });
+            </script>
 </body>
 
 </html>

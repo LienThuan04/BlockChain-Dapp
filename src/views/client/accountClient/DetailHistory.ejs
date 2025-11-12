@@ -178,7 +178,7 @@
                                                                                 data-OutPutCartDetail-id="<%= item.id %>">
                                                                                 <%= (unitPrice * item.quantity).toLocaleString('vi-VN') %> VND
                                                                             </p>
-                                                                            <% if (typeof item.lineCrypto !== 'undefined' && typeof cryptoActive !== 'undefined') { %>
+                                                                            <% if (String(history.paymentMethod || '').toUpperCase() === 'CRYPTO' && typeof item.lineCrypto !== 'undefined' && typeof cryptoActive !== 'undefined') { %>
                                                                                 <div class="text-muted small">~ <%= item.lineCrypto %> <%= cryptoActive.symbol || cryptoActive.code %></div>
                                                                             <% } %>
                                                                         </td>
@@ -198,11 +198,11 @@
                                                     <p class="mb-1 mx-2">Số lượng sản phẩm: <span
                                                             class="fw-bold text-warning"><%= history.orderDetails.map(item => item.quantity).reduce((a, b) => a + b, 0) %>
                                                         </span></p>
-                            <p class="mb-1 mx-4">Tổng số tiền: <span
-                                class="fw-bold text-danger"><%= history.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
-                            <% if (typeof history.cryptoTotal !== 'undefined' && typeof cryptoActive !== 'undefined') { %>
-                            <p class="mb-1 mx-4 text-muted small">Crypto total: ~ <%= history.cryptoTotal %> <%= cryptoActive.symbol || cryptoActive.code %></p>
-                            <% } %>
+                                                        <p class="mb-1 mx-4">Tổng số tiền: <span
+                                                            class="fw-bold text-danger"><%= history.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
+                                                        <% if (String(history.paymentMethod || '').toUpperCase() === 'CRYPTO' && typeof history.cryptoTotal !== 'undefined' && typeof cryptoActive !== 'undefined') { %>
+                                                        <p class="mb-1 mx-4 text-muted small">Crypto total: ~ <%= history.cryptoTotal %> <%= cryptoActive.symbol || cryptoActive.code %></p>
+                                                        <% } %>
                                                 </div>
                                             </div>
                                             <% if ((history && history.statusOrder === 'PENDING') || (history && history.statusOrder === 'PROCESSING') || (history && history.statusOrder === 'CONFIRMED') || (history && history.statusOrder === 'PACKED')) { %>
@@ -257,14 +257,24 @@
             <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.js" integrity="sha512-zlWWyZq71UMApAjih4WkaRpikgY9Bz1oXIW5G0fED4vk14JjGlQ1UmkGM392jEULP8jbNMiwLWdM8Z87Hu88Fw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
             <script>
+                // Embed server-side order payment info (safe JSON) so client UI can adapt messages
+                const _orderPaymentMethod = "<%= (history && history.paymentMethod) ? String(history.paymentMethod).toUpperCase() : '' %>";
+                const _orderPaymentStatus = "<%= (history && history.paymentStatus) ? String(history.paymentStatus).toUpperCase() : '' %>";
+
                 // Handle cancel order button
                 document.querySelectorAll('.cancelOrderBtn').forEach(btn => {
                     btn.addEventListener('click', async function() {
                         const orderId = this.getAttribute('data-order-id');
-                        if (!confirm('Bạn có chắc chắn muốn hủy đơn hàng này không? Tiền sẽ được hoàn lại cho bạn.')) {
+
+                        // Only mention refund when this order was paid via CRYPTO and has a PAID status
+                        const mentionsRefund = (_orderPaymentMethod === 'CRYPTO') && (_orderPaymentStatus === 'PAID' || _orderPaymentStatus === 'PAYMENT_PAID');
+                        const baseConfirm = 'Bạn có chắc chắn muốn hủy đơn hàng này không?';
+                        const confirmMsg = mentionsRefund ? baseConfirm + ' Tiền sẽ được hoàn lại cho bạn.' : baseConfirm;
+
+                        if (!confirm(confirmMsg)) {
                             return;
                         }
-                        
+
                         try {
                             const response = await fetch(`/cancel-order/${orderId}`, {
                                 method: 'POST',
@@ -273,12 +283,30 @@
                                     'Content-Type': 'application/json'
                                 }
                             });
-                            
+
                             const data = await response.json();
-                            
+
                             if (data.success) {
-                                alert('✅ ' + data.message);
-                                // Reload page after 1 second
+                                // Prefer server-provided refund info for accurate messaging
+                                const refund = data.refund || null;
+                                if (refund && refund.attempted && refund.method === 'CRYPTO') {
+                                    if (refund.success) {
+                                        alert('✅ Hủy đơn hàng thành công. Hoàn tiền bằng crypto đã được thực hiện. Tx: ' + (refund.txHash || '—'));
+                                    } else {
+                                        alert('⚠️ Hủy đơn hàng thành công nhưng hoàn tiền crypto thất bại. Vui lòng liên hệ hỗ trợ.');
+                                    }
+                                } else if (refund && refund.attempted && refund.method === 'PAYPAL') {
+                                    if (refund.success) {
+                                        alert('✅ Hủy đơn hàng thành công. Hoàn tiền PayPal đã được thực hiện.');
+                                    } else {
+                                        alert('⚠️ Hủy đơn hàng thành công nhưng hoàn tiền PayPal thất bại. Vui lòng liên hệ hỗ trợ.');
+                                    }
+                                } else {
+                                    // No refund attempted or not a crypto/paypal flow
+                                    alert('✅ ' + (data.message || 'Hủy đơn hàng thành công'));
+                                }
+
+                                // Reload page after 1 second to show updated status
                                 setTimeout(() => {
                                     location.reload();
                                 }, 1000);

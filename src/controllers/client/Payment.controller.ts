@@ -34,13 +34,54 @@ const PostPlaceOrder = async (req: Request, res: Response) => {
             console.log('💾 Order info saved to session, ready for payment processing');
         }
 
-        // Return success - client will handle payment method
-        // For PayPal: client will call /api/paypal/create-order
-        // For Crypto: client will initiate crypto checkout
-        return res.json({ 
-            success: true, 
+        // If the chosen payment method is an immediate on-site method (COD/BANK/TRANSFER)
+        // create the order on the server now and redirect to the thank-you page so
+        // the browser doesn't end up showing raw JSON.
+        const immediateMethods = ['COD', 'BANK', 'TRANSFER'];
+        if (immediateMethods.includes(String(paymentMethod))) {
+            try {
+                // Save order immediately (no external payment required)
+                const Target = await GetAllTargetForClient();
+                const Factory = await GetAllFactoryForClient();
+
+                const orderResult = await PlaceOrder(user, {
+                    receiverName: receiverName || '',
+                    receiverPhone: receiverPhone || '',
+                    receiverAddress: receiverAddress || '',
+                    receiverEmail: receiverEmail || null,
+                    receiverNote: receiverNote || null,
+                    paymentMethod: paymentMethod,
+                    paymentRef: null,
+                    paymentStatus: 'PENDING',
+                    ListIdCartDetail: ListIdDetailOrder
+                });
+
+                // Clear session orderInfo now that we've created the order
+                if (req.session) delete req.session.orderInfo;
+
+                const CartUserId = await FindCartForUserId(user.id) ?? null;
+                const UserQuantityCart = { ...user, quantityCart: CartUserId ? CartUserId.quantity : 0 };
+
+                // Render thanks page (status Success if orderResult truthy)
+                const resultStatus = orderResult ? 'Success' : 'Failed';
+                return res.render('client/product/thanksOrder.ejs', {
+                    status: resultStatus,
+                    totalVND: Number(req.body.totalPrice) || 0,
+                    user: UserQuantityCart,
+                    targets: Target,
+                    factories: Factory
+                });
+            } catch (err) {
+                console.error('Error creating immediate order:', err);
+                return res.render('status/500.ejs');
+            }
+        }
+
+        // Return success for client-side flows (PayPal/Crypto) - client will handle next steps
+        return res.json({
+            success: true,
             message: 'Order info saved, ready for payment',
-            paymentMethod: paymentMethod 
+            paymentMethod: paymentMethod
         });
     }
 };
