@@ -382,6 +382,9 @@
                                                                                 data-OutPutCartDetail-id="<%= item.id %>">
                                                                                 <%= (unitPrice * item.quantity).toLocaleString('vi-VN') %> VND
                                                                             </p>
+                                                                            <% if (String(order.paymentMethod || '').toUpperCase() === 'CRYPTO' && typeof item.lineCrypto !== 'undefined' && typeof cryptoActive !== 'undefined') { %>
+                                                                                <div class="text-muted small">~ <%= item.lineCrypto %> <%= cryptoActive.symbol || cryptoActive.code %></div>
+                                                                            <% } %>
                                                                         </td>
                                                                     </tr>
                                                                     <% }); %>
@@ -857,8 +860,11 @@
                                                     <p class="mb-1 mx-2">Số lượng sản phẩm: <span
                                                             class="fw-bold text-warning"><%= order.orderDetails.map(item => item.quantity).reduce((a, b) => a + b, 0) %>
                                                         </span></p>
-                                                    <p class="mb-1 mx-4">Tổng số tiền: <span
-                                                            class="fw-bold text-danger"><%= order.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
+                            <p class="mb-1 mx-4">Tổng số tiền: <span
+                                class="fw-bold text-danger"><%= order.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
+                            <% if (String(order.paymentMethod || '').toUpperCase() === 'CRYPTO' && typeof order.cryptoTotal !== 'undefined' && typeof cryptoActive !== 'undefined') { %>
+                            <p class="mb-1 mx-4 text-muted small">Crypto total: ~ <%= order.cryptoTotal %> <%= cryptoActive.symbol || cryptoActive.code %></p>
+                            <% } %>
                                                 </div>
                                             </div>
                                             <div class="mt-3 d-flex justify-content-end w-100">
@@ -1004,8 +1010,11 @@
                                                     <p class="mb-1 mx-2">Số lượng sản phẩm: <span
                                                             class="fw-bold text-warning"><%= order.orderDetails.map(item => item.quantity).reduce((a, b) => a + b, 0) %>
                                                         </span></p>
-                                                    <p class="mb-1 mx-4">Tổng số tiền: <span
-                                                            class="fw-bold text-danger"><%= order.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
+                            <p class="mb-1 mx-4">Tổng số tiền: <span
+                                class="fw-bold text-danger"><%= order.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
+                            <% if (String(order.paymentMethod || '').toUpperCase() === 'CRYPTO' && typeof order.cryptoTotal !== 'undefined' && typeof cryptoActive !== 'undefined') { %>
+                            <p class="mb-1 mx-4 text-muted small">Crypto total: ~ <%= order.cryptoTotal %> <%= cryptoActive.symbol || cryptoActive.code %></p>
+                            <% } %>
                                                 </div>
                                             </div>
                                             <div class="mt-3 d-flex justify-content-end w-100">
@@ -1151,8 +1160,11 @@
                                                     <p class="mb-1 mx-2">Số lượng sản phẩm: <span
                                                             class="fw-bold text-warning"><%= order.orderDetails.map(item => item.quantity).reduce((a, b) => a + b, 0) %>
                                                         </span></p>
-                                                    <p class="mb-1 mx-4">Tổng số tiền: <span
-                                                            class="fw-bold text-danger"><%= order.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
+                            <p class="mb-1 mx-4">Tổng số tiền: <span
+                                class="fw-bold text-danger"><%= order.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
+                            <% if (String(order.paymentMethod || '').toUpperCase() === 'CRYPTO' && typeof order.cryptoTotal !== 'undefined' && typeof cryptoActive !== 'undefined') { %>
+                            <p class="mb-1 mx-4 text-muted small">Crypto total: ~ <%= order.cryptoTotal %> <%= cryptoActive.symbol || cryptoActive.code %></p>
+                            <% } %>
                                                 </div>
                                             </div>
                                             <% if (order.statusOrder === 'DELIVERED') { %>
@@ -1316,8 +1328,11 @@
                                                     <p class="mb-1 mx-2">Số lượng sản phẩm: <span
                                                             class="fw-bold text-warning"><%= order.orderDetails.map(item => item.quantity).reduce((a, b) => a + b, 0) %>
                                                         </span></p>
-                                                    <p class="mb-1 mx-4">Tổng số tiền: <span
-                                                            class="fw-bold text-danger"><%= order.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
+                            <p class="mb-1 mx-4">Tổng số tiền: <span
+                                class="fw-bold text-danger"><%= order.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
+                            <% if (String(order.paymentMethod || '').toUpperCase() === 'CRYPTO' && typeof order.cryptoTotal !== 'undefined' && typeof cryptoActive !== 'undefined') { %>
+                            <p class="mb-1 mx-4 text-muted small">Crypto total: ~ <%= order.cryptoTotal %> <%= cryptoActive.symbol || cryptoActive.code %></p>
+                            <% } %>
                                                 </div>
                                             </div>
                                             <div class="mt-3 d-flex justify-content-end w-100">
@@ -1463,8 +1478,11 @@
                                                     <p class="mb-1 mx-2">Số lượng sản phẩm: <span
                                                             class="fw-bold text-warning"><%= order.orderDetails.map(item => item.quantity).reduce((a, b) => a + b, 0) %>
                                                         </span></p>
-                                                    <p class="mb-1 mx-4">Tổng số tiền: <span
-                                                            class="fw-bold text-danger"><%= order.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
+                            <p class="mb-1 mx-4">Tổng số tiền: <span
+                                class="fw-bold text-danger"><%= order.totalPrice.toLocaleString('vi-VN') %> VND</span></p>
+                            <% if (String(order.paymentMethod || '').toUpperCase() === 'CRYPTO' && typeof order.cryptoTotal !== 'undefined' && typeof cryptoActive !== 'undefined') { %>
+                            <p class="mb-1 mx-4 text-muted small">Crypto total: ~ <%= order.cryptoTotal %> <%= cryptoActive.symbol || cryptoActive.code %></p>
+                            <% } %>
                                                 </div>
                                             </div>
                                             <div class="mt-3 d-flex justify-content-end w-100">
