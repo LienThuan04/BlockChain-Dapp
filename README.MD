@@ -677,6 +677,60 @@ hoặc vào docker để xem.
 - cách tạo compose dự án backend này cùng với database mysql nằm ở đây: [docker-compose.yaml](https://github.com/LienThuan04/BlockChain-Dapp/blob/master/docker/nodejs/docker-compose.yaml).
 
 
+# Cách chuyển file `.tar` cho người dùng docker khác cài container:
+
+- Bước 1: commit images đó cần lưu share:
+```bash
+docker commit `id image` `tên mới của image của comit`:`tag name`
+```
+- Bước 2: kiểm tra lại commit mới lưu đó có tồn tại hay chưa:
+```bash
+docker images
+```
+- Bước 3: save images vào 1 file `.tar` cấu hình để gửi:
+```bash
+docker save -o `namefile.tar` `id images(có thể lưu nhiều images đó thành 1 file duy nhất bằng cách khoảng)`
+```
+khi chuyển file `.tar` cho người khác khi chạy lệnh `docker load -i (tên file tar đã share)` thì trong images của người nhận khi chạy lệnh này trong docker lại không có tag name nên ta cần đặt lại tên cho nó hoặc dùng id khỏi đặt tên củng được.
+
+```bash
+docker tag id_images name_new_for_this_images
+```
+
+- Sau cùng create docker-compose.yaml và setting cho nó:
+```bash
+services:
+  db:
+    image: 75081c5f7b17  # DÙNG TRỰC TIẾP IMAGE ID
+    container_name: DbMysql_LaptopShop_blockchain # có thể thêm lại mục này nếu muốn đặt tên cho nó trong container
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: LianHarman2049
+      MYSQL_DATABASE: LaptopShopDB
+      MYSQL_USER: LianHarman
+      MYSQL_PASSWORD: LianHarman2049
+    ports:
+      - "3307:3306"
+
+  server:
+    image: 80955feea3b8  # DÙNG TRỰC TIẾP IMAGE ID
+    restart: unless-stopped
+    container_name: Nodejs_LaptopShop_blockchain # có thể thêm lại mục này nếu muốn đặt tên cho nó trong container
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: "mysql://root:LianHarman2049@db:3306/LaptopShopDB"
+    ports:
+      - "8081:8080"
+```
+
+- Bước 4: chạy setup dự án bên người nhận:
+```bash
+docker load -i namefile.tar
+docker-compose up -d
+```
+- tận hưởng thành quả!
+
 
 
 
