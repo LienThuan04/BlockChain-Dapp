@@ -207,8 +207,7 @@
                                     <div class="d-flex justify-content-between">
                                         <h5 class="mb-0 me-4">Vận chuyển</h5>
                                         <div class="">
-                                            <p class="mb-0">Phí cố định: <%= (TotalPrice> 0 ? 30000 :
-                                                    0).toLocaleString('vi-VN') %> VND / 1KM</p>
+                                            <p class="mb-0">Phí cố định: 0 VND / 1KM</p>
                                         </div>
                                     </div>
                                     <!-- <p class="mb-0 text-end">Vận chuyển đến Ukraine.</p> -->
@@ -217,7 +216,7 @@
                                     <h5 class="mb-0 ps-4 me-4">Tổng cộng</h5>
                                     <div class="pe-4 text-end">
                                         <p class="mb-0 fw-bold text-danger" data-TotalPriceTT="<%= TotalPrice %>">
-                                            <%= (TotalPrice + (TotalPrice> 0 ? 30000 : 0)).toLocaleString('vi-VN') %> VND
+                                            <%= TotalPrice.toLocaleString('vi-VN') %> VND
                                         </p>
                                         <% if (typeof cryptoTotal !== 'undefined' && cryptoActive) { %>
                                             <p class="mb-0 text-muted small">Tổng giá Crypto: <span id="cart-crypto-total">~ <%= cryptoTotal %> <%= cryptoActive.symbol || cryptoActive.code %></span></p>
@@ -287,8 +286,8 @@
                                         <div class="d-flex justify-content-between">
                                             <h5 class="mb-0 me-4">Vận chuyển</h5>
                                             <div class="">
-                                                <p class="mb-0">Phí cố định: 30.000 VND / 1KM</p>
-                                            </div>
+                                                    <p class="mb-0">Phí cố định: 0 VND / 1KM</p>
+                                                </div>
                                         </div>
                                         <!-- <p class="mb-0 text-end">Vận chuyển đến Ukraine.</p> -->
                                     </div>
@@ -426,8 +425,8 @@
                                 el.setAttribute('data-TotalPrice', sumVnd);
                             });
 
-                            // Update total with shipping
-                            const shipping = sumVnd > 0 ? 30000 : 0;
+                            // Update total with shipping (no fixed surcharge)
+                            const shipping = 0;
                             const totalWithShipping = sumVnd + shipping;
                             const totalEls = document.querySelectorAll('[data-TotalPriceTT]');
                             totalEls.forEach(el => {

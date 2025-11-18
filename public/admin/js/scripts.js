@@ -94,7 +94,8 @@ document.addEventListener('DOMContentLoaded', function () {
             totalQty += qty;
             totalPrice += qty * (price + priceMore);
         });
-        totalPrice = totalPrice + 30000;
+        // Removed fixed 30k surcharge - totals should reflect actual item sums
+        // totalPrice remains as computed from item lines
         const totalQtyInput = document.getElementById('total-quantity');
         const totalPriceInput = document.getElementById('total-price');
         if (totalQtyInput) totalQtyInput.value = totalQty;

@@ -252,8 +252,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         $(`p[data-TotalPrice]`).text(totalPrice.toLocaleString('vi-VN') + ' VND');
 
-        // Tổng cộng (có phí ship)
-        const totalWithShip = totalPrice > 0 ? totalPrice + 30000 : 0;
+        // Tổng cộng (không còn phí ship cố định)
+        const totalWithShip = totalPrice > 0 ? totalPrice : 0;
         $(`p[data-TotalPriceTT]`).text(totalWithShip.toLocaleString('vi-VN') + ' VND');
     });
 
@@ -567,8 +567,8 @@ $(document).on('input', 'input[data-InputCartDetail-id]', function () {
     });
     $(`p[data-TotalPrice]`).text(totalPrice.toLocaleString('vi-VN') + ' VND');
 
-    // Cập nhật tổng cộng (có phí ship)
-    const totalWithShip = totalPrice > 0 ? totalPrice + 30000 : 0;
+    // Cập nhật tổng cộng (không còn phí ship cố định)
+    const totalWithShip = totalPrice > 0 ? totalPrice : 0;
     $(`p[data-TotalPriceTT]`).text(totalWithShip.toLocaleString('vi-VN') + ' VND');
 });
 
@@ -938,7 +938,7 @@ document.addEventListener('DOMContentLoaded', function () {
             totalPriceEls.forEach(function(el) {
                 el.textContent = totalPrice.toLocaleString('vi-VN') + ' VND';
             });
-            var totalWithShip = totalPrice > 0 ? totalPrice + 30000 : 0;
+            var totalWithShip = totalPrice > 0 ? totalPrice : 0;
             var totalPriceTTEls = document.querySelectorAll('p[data-TotalPriceTT]');
             totalPriceTTEls.forEach(function(el) {
                 el.textContent = totalWithShip.toLocaleString('vi-VN') + ' VND';
@@ -973,7 +973,7 @@ $(document).ready(function () {
                 totalPrice += totalUnitPrice * quantity;
         });
         $('p[data-TotalPrice]').text(totalPrice.toLocaleString('vi-VN') + ' VND');
-        const totalWithShip = totalPrice > 0 ? totalPrice + 30000 : 0;
+        const totalWithShip = totalPrice > 0 ? totalPrice : 0;
         $('p[data-TotalPriceTT]').text(totalWithShip.toLocaleString('vi-VN') + ' VND');
     }
     function toggleCheckoutBtn() {

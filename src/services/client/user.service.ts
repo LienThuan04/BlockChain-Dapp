@@ -296,7 +296,7 @@ const PlaceOrder = async (user: UserRole,
                         receiverNote: orderData.receiverNote,
                         paymentMethod: orderData.paymentMethod,
                         paymentStatus: (orderData.paymentStatus ? orderData.paymentStatus : 'PAYMENT_UNPAID'),
-                        totalPrice: DataOrderCartDetail.reduce((acc, item) => acc + (item.price * (item.quantity ? item.quantity : 0)), 0) + 30000,
+                        totalPrice: DataOrderCartDetail.reduce((acc, item) => acc + (item.price * (item.quantity ? item.quantity : 0)), 0),
                         ...(orderData.paymentRef ? { paymentRef: orderData.paymentRef } : null),
                         orderDetails: {
                             create: orderDetailsCreateData as any,
@@ -383,6 +383,7 @@ const GetOrderHistoryForUser = async (user: UserRole) => {
                 }
             }
         },
+        orderBy: { createdAt: 'desc' }
 
     });
     return orders;
