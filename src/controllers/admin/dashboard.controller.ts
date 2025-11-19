@@ -19,6 +19,7 @@ const getAdminUserPage = async (req: Request, res: Response) => {
     const { Page } = req.query;
     let CurrentPage = Page ? Number(Page) : 0;
     if (CurrentPage < 0) CurrentPage = 0;
+    
     const User = await GetAllUser(CurrentPage);
     return res.render('admin/user/show.ejs', {
         ListUser: User,
@@ -30,7 +31,7 @@ const getAdminOrderPage = async (req: Request, res: Response) => {
     const { Page, status, paymentMethod, paymentStatus, searchUser } = req.query;
     let CurrentPage = Page ? Number(Page) : 0;
     if (CurrentPage < 0) CurrentPage = 0;
-    
+
     // Build filter object
     const filters: any = {};
     if (status) filters.status = status;
@@ -38,7 +39,27 @@ const getAdminOrderPage = async (req: Request, res: Response) => {
     if (paymentStatus) filters.paymentStatus = paymentStatus;
     if (searchUser) filters.searchUser = searchUser;
     
-    const Order = await GetAllOrder(CurrentPage, filters);
+    // If filters are present, query the DB for all matching results and return them on a single page
+    const hasFilters = Boolean(status || paymentMethod || paymentStatus || searchUser);
+
+    let Order;
+    let totalPages;
+    if (hasFilters) {
+        // Use Page = -1 to signal service to return all matching rows (no pagination)
+        Order = await GetAllOrder(-1, filters);
+        // Debug: log filters and result size to help diagnose unexpected filter results
+        try {
+            console.log('DEBUG [AdminOrderFilter] filters=', JSON.stringify(filters), 'results=', Array.isArray(Order) ? Order.length : 0, 'ids=', Array.isArray(Order) ? Order.slice(0,10).map(o=>o.id) : []);
+        } catch (e) {
+            console.log('DEBUG [AdminOrderFilter] failed to stringify filter debug', e);
+        }
+        totalPages = 1;
+        CurrentPage = 0;
+    } else {
+        Order = await GetAllOrder(CurrentPage, filters);
+        totalPages = await CountTotalOrderPage(filters);
+    }
+
     const ordersWithReviews = await Promise.all(Order.map(async order => {
         const review = await GetReviewById(order.id); 
         return { ...order, statusReview: review ? true : false };
@@ -46,7 +67,7 @@ const getAdminOrderPage = async (req: Request, res: Response) => {
     
     return res.render('admin/order/show.ejs', {
         orders: ordersWithReviews,
-        totalPages: await CountTotalOrderPage(filters),
+        totalPages,
         currentPage: CurrentPage,
         // Pass filter values for form
         filters: {

@@ -12,6 +12,7 @@ const GetDetailOrder = async (req: Request, res: Response) => {
     return res.render('admin/order/detailOrder.ejs', {
         detailOrder: detailOrder.detailOrder,
         order: detailOrder.order,
+        cryptoTx: detailOrder.cryptoTx || null,
         success: success === '1'
     });
 };

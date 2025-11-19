@@ -64,6 +64,39 @@
                         </a>
 
                     </div>
+                    <script>
+                        (function () {
+                            try {
+                                // Find the best matching nav link for the current path
+                                const path = window.location.pathname || '/';
+                                const navLinks = Array.from(document.querySelectorAll('#layoutSidenav_nav .nav-link'));
+                                // choose the longest href that matches the start of the path
+                                let bestMatch = null;
+                                let bestLen = -1;
+                                navLinks.forEach(a => {
+                                    const href = a.getAttribute('href');
+                                    if (!href) return;
+                                    // treat root specially
+                                    if (href === path) {
+                                        if (href.length > bestLen) { bestMatch = a; bestLen = href.length; }
+                                    } else if (href !== '/' && path.startsWith(href)) {
+                                        if (href.length > bestLen) { bestMatch = a; bestLen = href.length; }
+                                    }
+                                });
+                                if (bestMatch) {
+                                    navLinks.forEach(a => a.classList.remove('active'));
+                                    bestMatch.classList.add('active');
+                                    // Ensure any parent accordion items are toggled open (if using nested navs)
+                                    const parent = bestMatch.closest('.collapse');
+                                    if (parent && parent.classList.contains('collapse')) {
+                                        parent.classList.add('show');
+                                    }
+                                }
+                            } catch (err) {
+                                console.error('sidenav active highlight error', err);
+                            }
+                        })();
+                    </script>
                 </div>
                 <div class="sb-sidenav-footer">
                     <div class="small">Logged in as:</div>

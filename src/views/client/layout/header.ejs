@@ -71,7 +71,10 @@
                             <a href="/checkout" class="dropdown-item">Thanh toán</a>
                             <% if (user) { %>
                                 <a href="/My-Account" class="dropdown-item">Quản lý tài khoản</a>
-                                <a href="/order-history" class="dropdown-item">Lịch sử mua hàng</a>                                
+                                <a href="/order-history" class="dropdown-item">Lịch sử mua hàng</a>
+                                <% if (user?.role?.name === 'ADMIN') { %>
+                                    <a href="/admin/" class="dropdown-item">Trang Admin</a>
+                                    <% } %>                                
                                 <% } else { %>
                                     <a href="/login" class="dropdown-item">Đăng nhập</a>
                                     <% } %>

@@ -43,7 +43,8 @@
                                 
                                 <!-- Filter Form -->
                                 <div class="card-body bg-light border-bottom">
-                                    <form method="GET" action="/admin/order" class="row g-3">
+                                    <form method="GET" action="/admin/order" class="row g-3" id="orderFilterForm">
+                                        <input type="hidden" name="Page" id="PageInput" value="<%= currentPage %>">
                                         <!-- Search User -->
                                         <div class="col-md-3">
                                             <label for="searchUser" class="form-label"><i class="fas fa-search"></i> Search Customer</label>
@@ -101,6 +102,28 @@
                                 </div>
                                 
                                 <div class="card-body p-0">
+                                    <% const hasFilters = filters && (filters.status || filters.paymentMethod || filters.paymentStatus || filters.searchUser); %>
+                                    <% if (hasFilters) { %>
+                                        <% if (orders && orders.length > 0) { %>
+                                            <div class="alert alert-success m-3" role="alert">
+                                                <strong><%= orders.length %></strong> result(s) matching filters
+                                                <div class="small text-muted">Filters:
+                                                    <% const active = []; %>
+                                                    <% if (filters.status) active.push('Status: ' + filters.status); %>
+                                                    <% if (filters.paymentMethod) active.push('Method: ' + filters.paymentMethod); %>
+                                                    <% if (filters.paymentStatus) active.push('Payment: ' + filters.paymentStatus); %>
+                                                    <% if (filters.searchUser) active.push('User: ' + filters.searchUser); %>
+                                                    <%= active.join(' | ') %>
+                                                </div>
+                                                <a href="/admin/order" class="btn btn-sm btn-light ms-3">Clear filters</a>
+                                            </div>
+                                        <% } else { %>
+                                            <div class="alert alert-warning m-3" role="alert">
+                                                No orders found for the selected filters.
+                                                <a href="/admin/order" class="btn btn-sm btn-secondary ms-3">Reset filters</a>
+                                            </div>
+                                        <% } %>
+                                    <% } %>
                                     <div class="table-responsive">
                                         <table class="table table-hover align-middle mb-0">
                                             <thead class="table-light">
@@ -272,6 +295,33 @@
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
             crossorigin="anonymous"></script>
         <script src="/admin/js/scripts.js"></script>
+        <script>
+            // If admin selects a payment status (e.g. Paid), clear the order status filter
+            // so the paymentStatus filter returns all paid orders regardless of order status.
+            document.addEventListener('DOMContentLoaded', function () {
+                try {
+                    const paymentStatusEl = document.getElementById('paymentStatus');
+                    const statusEl = document.getElementById('status');
+                    if (paymentStatusEl && statusEl) {
+                        paymentStatusEl.addEventListener('change', function () {
+                            if (this.value && this.value !== '') {
+                                statusEl.value = '';
+                            }
+                        });
+                    }
+                    const filterForm = document.getElementById('orderFilterForm');
+                    const pageInput = document.getElementById('PageInput');
+                    if (filterForm && pageInput) {
+                        filterForm.addEventListener('submit', function () {
+                            // reset to first page when applying a new filter
+                            pageInput.value = '0';
+                        });
+                    }
+                } catch (e) {
+                    console.error('filter helper error', e);
+                }
+            });
+        </script>
 
 </body>
 

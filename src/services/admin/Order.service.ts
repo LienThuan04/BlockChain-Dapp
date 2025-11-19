@@ -9,8 +9,6 @@ interface FilterOptions {
 }
 
 const GetAllOrder = async (Page: number, filters?: FilterOptions) => {
-    const skip = Page * PAGE_SIZE_WITH_ADMIN;
-    
     // Build where clause based on filters
     const where: any = {};
     
@@ -23,7 +21,14 @@ const GetAllOrder = async (Page: number, filters?: FilterOptions) => {
     }
     
     if (filters?.paymentStatus) {
-        where.paymentStatus = filters.paymentStatus;
+        // Normalize "Paid" semantics: sometimes orders use 'PAID' and sometimes 'PAYMENT_PAID'.
+        // If the filter asks for PAYMENT_PAID (the UI's "Paid" option), include both values.
+        const ps = String(filters.paymentStatus).toUpperCase();
+        if (ps === 'PAYMENT_PAID' || ps === 'PAID') {
+            where.paymentStatus = { in: ['PAID', 'PAYMENT_PAID'] };
+        } else {
+            where.paymentStatus = filters.paymentStatus;
+        }
     }
     
     if (filters?.searchUser) {
@@ -46,15 +51,29 @@ const GetAllOrder = async (Page: number, filters?: FilterOptions) => {
         ];
     }
     
-    const orders = await prisma.order.findMany({
+    const queryOptions: any = {
         where,
-        include: {
-            User: true,
-        },
-        skip,
-        take: PAGE_SIZE_WITH_ADMIN,
+        include: { User: true },
         orderBy: { createdAt: 'desc' } // Mới nhất trước
-    });
+    };
+
+    // Debug: log constructed where/queryOptions when filters used (helps diagnose unexpected results)
+    try {
+        if (filters && Object.keys(filters).length > 0) {
+            console.log('DEBUG [GetAllOrder] where=', JSON.stringify(where), 'queryOptions=', JSON.stringify(Object.keys(queryOptions)));
+        }
+    } catch (e) {
+        console.log('DEBUG [GetAllOrder] failed to stringify where/queryOptions', e);
+    }
+
+    // If Page is negative, caller requests all matching rows in one go (no pagination)
+    if (typeof Page === 'number' && Page >= 0) {
+        const skip = Page * PAGE_SIZE_WITH_ADMIN;
+        queryOptions.skip = skip;
+        queryOptions.take = PAGE_SIZE_WITH_ADMIN;
+    }
+
+    const orders = await prisma.order.findMany(queryOptions);
     return orders;
 };
 
@@ -70,7 +89,12 @@ const CountTotalOrderPage = async (filters?: FilterOptions) => {
     }
     
     if (filters?.paymentStatus) {
-        where.paymentStatus = filters.paymentStatus;
+        const ps = String(filters.paymentStatus).toUpperCase();
+        if (ps === 'PAYMENT_PAID' || ps === 'PAID') {
+            where.paymentStatus = { in: ['PAID', 'PAYMENT_PAID'] };
+        } else {
+            where.paymentStatus = filters.paymentStatus;
+        }
     }
     
     if (filters?.searchUser) {
@@ -110,7 +134,12 @@ const GetDetailOrderForAdmin = async (id: number) => {
             productVariant: true
         }
     });
-    return { detailOrder, order };
+    // If there is a crypto transaction associated with this order, include it so the admin UI can show crypto amounts
+    const cryptoTx = await prisma.cryptoTransaction.findFirst({
+        where: { orderId: id },
+        include: { cryptocurrency: true }
+    });
+    return { detailOrder, order, cryptoTx };
 };
 
 const UpdateOrderById = async (id: number, data: any) => {
