@@ -127,27 +127,27 @@
                                                         </span>
                                                     </h5>
                                                     <p class="mb-1">Trạng thái: <span
-                                                            class="fw-bold text-success">
+                                                            class="fw-bold text-info">
                                                             <% if (order.statusOrder === 'PENDING') { %>
-                                                                Đang chờ xử lý 
+                                                                <a class="text-warning">Đang chờ xử lý</a> 
                                                             <% } else if (order.statusOrder === 'PROCESSING') { %>
-                                                                Đang xử lý
+                                                                <a class="text-primary">Đang xử lý</a>
                                                             <% } else if (order.statusOrder === 'CONFIRMED') { %>
-                                                                Đã xác nhận
+                                                                <a class="text-info">Đã xác nhận</a>
                                                             <% } else if (order.statusOrder === 'PACKED') { %>
-                                                                Đã đóng gói
+                                                                <a class="text-warning">Đã đóng gói</a>
                                                             <% } else if (order.statusOrder === 'SHIPPED') { %>
-                                                                Đã giao cho đơn vị vận chuyển
+                                                                <a class="text-primary">Đã giao cho đơn vị vận chuyển</a>
                                                             <% } else if (order.statusOrder === 'DELIVERED') { %>
-                                                                Đã giao thành công
+                                                                <a class="text-success">Đã giao thành công</a>
                                                             <% } else if (order.statusOrder === 'CANCELLED') { %>
-                                                                Đã hủy
+                                                                <a class="text-danger">Đã hủy</a>
                                                             <% } else if (order.statusOrder === 'RETURNED') { %>
-                                                                Đã trả hàng
+                                                                <a class="text-warning">Đã trả hàng</a>
                                                             <% } else if (order.statusOrder === 'REFUNDED') { %>
-                                                                Đã hoàn tiền
+                                                                <a class="text-info">Đã hoàn tiền</a>
                                                             <% } else { %>
-                                                                Không xác định
+                                                                <a class="text-muted">Không xác định</a>
                                                             <% } %>
                                                         </span>
                                                     </p>
@@ -295,7 +295,7 @@
                                                         </span>
                                                     </h5>
                                                     <p class="mb-1">Trạng thái: <span
-                                                            class="fw-bold text-success">
+                                                            class="fw-bold text-warning">
                                                             <% if (order.statusOrder === 'PENDING') { %>
                                                                 Đang chờ xử lý 
                                                             <% } else if (order.statusOrder === 'PROCESSING') { %>
@@ -451,7 +451,7 @@
                                                         </span>
                                                     </h5>
                                                     <p class="mb-1">Trạng thái: <span
-                                                            class="fw-bold text-success">
+                                                            class="fw-bold text-primary">
                                                             <% if (order.statusOrder === 'PENDING') { %>
                                                                 Đang chờ xử lý 
                                                             <% } else if (order.statusOrder === 'PROCESSING') { %>
@@ -604,7 +604,7 @@
                                                         </span>
                                                     </h5>
                                                     <p class="mb-1">Trạng thái: <span
-                                                            class="fw-bold text-success">
+                                                            class="fw-bold text-primary">
                                                             <% if (order.statusOrder === 'PENDING') { %>
                                                                 Đang chờ xử lý 
                                                             <% } else if (order.statusOrder === 'PROCESSING') { %>
@@ -757,7 +757,7 @@
                                                         </span>
                                                     </h5>
                                                     <p class="mb-1">Trạng thái: <span
-                                                            class="fw-bold text-success">
+                                                            class="fw-bold text-warning">
                                                             <% if (order.statusOrder === 'PENDING') { %>
                                                                 Đang chờ xử lý 
                                                             <% } else if (order.statusOrder === 'PROCESSING') { %>
@@ -910,7 +910,7 @@
                                                         </span>
                                                     </h5>
                                                     <p class="mb-1">Trạng thái: <span
-                                                            class="fw-bold text-success">
+                                                            class="fw-bold text-primary">
                                                             <% if (order.statusOrder === 'PENDING') { %>
                                                                 Đang chờ xử lý 
                                                             <% } else if (order.statusOrder === 'PROCESSING') { %>
@@ -1228,7 +1228,7 @@
                                                         </span>
                                                     </h5>
                                                     <p class="mb-1">Trạng thái: <span
-                                                            class="fw-bold text-success">
+                                                            class="fw-bold text-danger">
                                                             <% if (order.statusOrder === 'PENDING') { %>
                                                                 Đang chờ xử lý 
                                                             <% } else if (order.statusOrder === 'PROCESSING') { %>
@@ -1378,7 +1378,7 @@
                                                         </span>
                                                     </h5>
                                                     <p class="mb-1">Trạng thái: <span
-                                                            class="fw-bold text-success">
+                                                            class="fw-bold text-warning">
                                                             <% if (order.statusOrder === 'PENDING') { %>
                                                                 Đang chờ xử lý 
                                                             <% } else if (order.statusOrder === 'PROCESSING') { %>
@@ -1528,7 +1528,7 @@
                                                         </span>
                                                     </h5>
                                                     <p class="mb-1">Trạng thái: <span
-                                                            class="fw-bold text-success">
+                                                            class="fw-bold text-info">
                                                             <% if (order.statusOrder === 'PENDING') { %>
                                                                 Đang chờ xử lý 
                                                             <% } else if (order.statusOrder === 'PROCESSING') { %>

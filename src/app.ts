@@ -80,6 +80,8 @@ initDatabase();
 
 app.listen(port, () => {
   console.log(__dirname + '/views');
-  console.log(`Server is running on http://localhost:${port}`);
+  const url = `http://localhost:${port}`;
+  // Print the URL in blue so it looks like a clickable link in supported terminals
+  console.log(`Server is running on \x1b[34m${url}\x1b[0m`);
 });
 

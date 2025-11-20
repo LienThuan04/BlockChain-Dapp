@@ -15,10 +15,10 @@ function cleanEnvValue(v?: string) {
 const clientId = cleanEnvValue(process.env.PAYPAL_CLIENT_ID);
 const clientSecret = cleanEnvValue(process.env.PAYPAL_CLIENT_SECRET);
 
-console.log('🔐 [PAYPAL-CONFIG] Client ID from env:', process.env.PAYPAL_CLIENT_ID?.substring(0, 20) + '...');
-console.log('🔐 [PAYPAL-CONFIG] Client ID after clean:', clientId?.substring(0, 20) + '...');
-console.log('🔐 [PAYPAL-CONFIG] Client Secret length before clean:', process.env.PAYPAL_CLIENT_SECRET?.length);
-console.log('🔐 [PAYPAL-CONFIG] Client Secret length after clean:', clientSecret?.length);
+// console.log('🔐 [PAYPAL-CONFIG] Client ID from env:', process.env.PAYPAL_CLIENT_ID?.substring(0, 20) + '...');
+// console.log('🔐 [PAYPAL-CONFIG] Client ID after clean:', clientId?.substring(0, 20) + '...');
+// console.log('🔐 [PAYPAL-CONFIG] Client Secret length before clean:', process.env.PAYPAL_CLIENT_SECRET?.length);
+// console.log('🔐 [PAYPAL-CONFIG] Client Secret length after clean:', clientSecret?.length);
 
 if (!clientId || !clientSecret) {
     console.warn('PayPal client id/secret missing or empty. Check PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET in your .env');
