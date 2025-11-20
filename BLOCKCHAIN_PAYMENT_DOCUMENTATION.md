@@ -29,6 +29,17 @@ Customer → MetaMask → Blockchain Transfer → Backend Confirmation → Datab
 
 ---
 
+## 🔁 Thay Đổi Gần Đây
+
+- **Ý nghĩa trạng thái thanh toán**: Tùy chọn "Paid" trên giao diện giờ đây khớp với cả `PAYMENT_PAID` và `PAID`. Một số luồng (ví dụ PayPal) lưu `PAYMENT_PAID`, trong khi luồng thanh toán bằng crypto lưu `PAID`. Các bộ lọc và tài liệu đã được cập nhật để phản ánh điều này.
+- **Cấu trúc trả về của `CancelOrderById`**: hàm giờ trả về một đối tượng kết quả hoàn tiền chi tiết (gồm thông tin có cố gắng hoàn tiền hay không, phương thức, kết quả thành công, txHash nếu có, và thông điệp), không còn trả về boolean đơn giản.
+- **Loại bỏ phụ phí giao hàng cố định**: ứng dụng không còn tự cộng 30.000 VND cố định nữa; phí giao hàng được xử lý riêng và mặc định là 0 trừ khi có quy tắc giao hàng cụ thể.
+- **Thay đổi UX PayPal**: backend sẽ không tạo order nếu quá trình capture PayPal thất bại. Order chỉ được tạo sau khi capture/confirm thành công.
+- **Thay đổi UX MetaMask / Crypto**: frontend sẽ hiển thị modal yêu cầu cài MetaMask khi không phát hiện MetaMask; tùy chọn thanh toán CRYPTO sẽ bị vô hiệu nếu MetaMask không có hoặc người dùng từ chối cài đặt.
+- **Bộ lọc admin**: khi áp dụng bất kỳ bộ lọc đơn hàng nào, server sẽ trả về tất cả các hàng khớp trong một trang duy nhất (không phân trang) để admin có thể xem toàn bộ tập kết quả. Nên cân nhắc bổ sung giới hạn an toàn (ví dụ 1000 hàng) để tránh trả về tập dữ liệu quá lớn.
+- **Helper mới**: `GetLatestOrderForUser` trả về đơn hàng gần nhất của người dùng (sắp xếp theo `id` giảm dần).
+
+
 ## 💳 Quy trình Thanh toán
 
 ### Quy trình 1: Thanh toán từ Trang Chi tiết Sản phẩm (Single Product)
@@ -516,77 +527,55 @@ Product (1) ──────────────── (N) ProductVariant
 
 ## 💰 Xử lý Refund
 
-### **Quy trình Hoàn tiền:**
+### **Quy trình Hoàn tiền (tóm tắt):**
 
 **File:** `src/services/client/user.service.ts`
 
-```typescript
-export const CancelOrderById = async (orderId: number) => {
-  const order = await prisma.order.findUnique({
-    where: { id: orderId }
-  });
-  
-  if (order.paymentMethod === 'CRYPTO') {
-    // 1. Tìm CryptoTransaction gốc
-    const origTx = await prisma.cryptoTransaction.findFirst({
-      where: { orderId: orderId }
-    });
-    
-    // 2. Lấy wallet admin
-    const activeWallet = await prisma.cryptoWallet.findFirst({
-      where: { isActive: true }
-    });
-    const adminWallet = activeWallet?.walletAddress || process.env.ADMIN_WALLET_ADDRESS;
-    
-    // 3. Gọi Web3 để gửi tiền hoàn lại
-    const web3 = new Web3(process.env.ETH_NODE_URL);
-    const account = web3.eth.accounts.privateKeyToAccount(activeWallet.privateKey);
-    
-    // 4. Tạo transaction hoàn lại
-    const txData = {
-      to: origTx.fromAddress,                    // Gửi lại cho khách
-      value: web3.utils.toWei(origTx.amount),   // Số tiền hoàn
-      gas: 21000,
-      gasPrice: await web3.eth.getGasPrice()
-    };
-    
-    const signedTx = await account.signTransaction(txData);
-    const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
-    
-    // 5. Cập nhật status CryptoTransaction gốc
-    await prisma.cryptoTransaction.update({
-      where: { id: origTx.id },
-      data: { status: 'REFUNDED' }   // ← Ghi dấu đã hoàn tiền
-    });
-    
-    // 6. Tạo CryptoTransaction record mới cho refund
-    await prisma.cryptoTransaction.create({
-      data: {
-        transactionHash: receipt.transactionHash,
-        fromAddress: adminWallet,
-        toAddress: origTx.fromAddress,
-        amount: origTx.amount,
-        amountInFiat: origTx.amountInFiat,
-        status: 'SUCCESS',
-        description: `Refund for cancelled order ${orderId}`,
-        orderId: orderId,
-        cryptoId: origTx.cryptoId
-      }
-    });
-  }
-  
-  // Update order status
-  await prisma.order.update({
-    where: { id: orderId },
-    data: { 
-      statusOrder: 'CANCELLED',
-      paymentStatus: 'REFUNDED'
-    }
-  });
+Dịch vụ `CancelOrderById` chỉ cố gắng thực hiện hoàn tiền khi phù hợp (chủ yếu cho các đơn thanh toán bằng crypto). Các điểm chính:
+
+- Chỉ thực hiện hoàn tiền khi `order.paymentMethod === 'CRYPTO'` và `order.paymentStatus` là `PAID` hoặc `PAYMENT_PAID`.
+- Hàm giờ trả về một đối tượng kết quả hoàn tiền có cấu trúc (thay vì boolean). Đối tượng này bao gồm các trường như `attempted` (đã cố gắng hay chưa), `method` (phương thức), `success` (thành công hay không), `txHash` (nếu có), và `message` (thông điệp) để frontend có thể hiện thông báo rõ ràng.
+
+Ví dụ giá trị trả về:
+
+1) Hoàn tiền crypto thành công
+
+```json
+{
+  "attempted": true,
+  "method": "CRYPTO",
+  "success": true,
+  "txHash": "0xabc123...",
+  "message": "Đã hoàn tiền tới 0xCustomer..."
 }
 ```
 
-### **Trình tự hoàn tiền:**
+2) Không thực hiện hoàn tiền (không phải crypto hoặc trạng thái không phù hợp)
+
+```json
+{
+  "attempted": false,
+  "method": null,
+  "success": false,
+  "txHash": null,
+  "message": "Không thực hiện hoàn tiền: paymentMethod != CRYPTO hoặc paymentStatus không phải PAID"
+}
+```
+
+Tóm tắt cách hoạt động:
+
+- Nếu có thể hoàn tiền bằng crypto thì dịch vụ sẽ:
+  - Tìm `CryptoTransaction` gốc liên quan đến đơn (nếu có).
+  - Tìm ví admin đang active (hoặc fallback về `ADMIN_WALLET_ADDRESS`).
+  - Ký và gửi giao dịch hoàn tiền bằng private key admin (qua Web3).
+  - Đánh dấu trạng thái của giao dịch gốc là `REFUNDED` và chèn một bản ghi `CryptoTransaction` mới cho giao dịch hoàn tiền (trạng thái `SUCCESS` khi thành công).
+  - Cập nhật `Order` thành `statusOrder = 'CANCELLED'` và `paymentStatus = 'REFUNDED'` khi hoàn tiền hoàn tất.
+
+- Khi xảy ra lỗi, dịch vụ trả về `success: false` kèm `message` giải thích và cố gắng không để hệ thống rơi vào trạng thái không nhất quán.
+
+Ghi chú cho developer: lưu private key ở dạng plaintext là không an toàn. Nên dùng kho quản lý khóa (KMS) hoặc phần cứng ký (hardware wallet).
+
+### **Trình tự hoàn tiền (chi tiết):**
 
 ```
 1. Khách hàng yêu cầu hủy order
@@ -610,7 +599,7 @@ export const CancelOrderById = async (orderId: number) => {
 10. Admin Dashboard hiển thị "Đã hoàn tiền"
 ```
 
-### **Database after refund:**
+### **Database after refund (example):**
 
 ```
 CryptoTransaction gốc (Thanh toán):
