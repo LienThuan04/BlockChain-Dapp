@@ -71,10 +71,7 @@
                             <a href="/checkout" class="dropdown-item">Thanh toán</a>
                             <% if (user) { %>
                                 <a href="/My-Account" class="dropdown-item">Quản lý tài khoản</a>
-                                <a href="/order-history" class="dropdown-item">Lịch sử mua hàng</a>
-                                <% if (user?.role?.name === 'ADMIN') { %>
-                                    <a href="/admin/" class="dropdown-item">Trang Admin</a>
-                                    <% } %>                                
+                                <a href="/order-history" class="dropdown-item">Lịch sử mua hàng</a>                                
                                 <% } else { %>
                                     <a href="/login" class="dropdown-item">Đăng nhập</a>
                                     <% } %>
@@ -114,6 +111,9 @@
                                         </small>
                                     </div>
                                 </li>
+                                <% if (user?.role?.name === 'ADMIN') { %>
+                                    <li><a class="dropdown-item" href="/admin/"><i class="fas fa-user-shield"></i> Trang quản trị hệ thống</a></li>
+                                <% } %>
                                 <li><a class="dropdown-item" href="/My-Account"><i class="fas fa-user-cog"></i> Quản lý tài khoản</a></li>
                                 <li><a class="dropdown-item" href="/order-history"><i class="fas fa-history"></i> Lịch sử mua hàng</a></li>
                                 <li>
