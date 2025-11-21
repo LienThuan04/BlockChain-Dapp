@@ -222,6 +222,19 @@
                                                 <%= (TotalPrice).toLocaleString('vi-VN') %> VND
                                             </span>
                                         </div>
+                                        <!-- Crypto total (shown when user selects CRYPTO) -->
+                                        <div id="cryptoPriceRow" class="d-flex justify-content-between align-items-center mt-2"
+                                            style="<%= (typeof cryptoTotal !== 'undefined' && cryptoActive) ? 'display:flex;' : 'display:none;' %>">
+                                            <span class="fw-bold">Tổng cộng (SGB):</span>
+                                            <span class="text-primary fw-bold" id="cryptoAmountDisplay">
+                                                <%= (typeof cryptoTotal !== 'undefined' && cryptoTotal) ? cryptoTotal : '0' %> SGB
+                                            </span>
+                                        </div>
+                                        <div id="cryptoRateRow" class="d-flex justify-content-between align-items-center small text-muted mt-1"
+                                            style="<%= cryptoActive ? 'display:flex;' : 'display:none;' %>">
+                                            <span>Tỷ giá:</span>
+                                            <span id="cryptoRateDisplay"><%= cryptoActive ? (cryptoActive.priceVND ? Number(cryptoActive.priceVND).toLocaleString('vi-VN') : '') : '' %> VND / 1 SGB</span>
+                                        </div>
                                     </div>
                                     <div class="mb-3">
                                         <label class="fw-bold mb-2">Hình thức thanh toán</label>
@@ -378,6 +391,25 @@
                                 console.warn('Error handling stay button:', e);
                             }
                         });
+                    }
+                });
+                
+                // Show/hide crypto total when payment method changes
+                document.addEventListener('DOMContentLoaded', function () {
+                    try {
+                        const cryptoRow = document.getElementById('cryptoPriceRow');
+                        const cryptoRateRow = document.getElementById('cryptoRateRow');
+                        const radios = document.querySelectorAll('input[name="paymentMethod"]');
+                        function update() {
+                            const sel = document.querySelector('input[name="paymentMethod"]:checked');
+                            const isCrypto = sel && sel.value === 'CRYPTO';
+                            if (cryptoRow) cryptoRow.style.display = isCrypto ? 'flex' : 'none';
+                            if (cryptoRateRow) cryptoRateRow.style.display = isCrypto ? 'flex' : 'none';
+                        }
+                        update();
+                        radios.forEach(r => r.addEventListener('change', update));
+                    } catch (e) {
+                        console.warn('Error initializing crypto toggle', e);
                     }
                 });
             </script>

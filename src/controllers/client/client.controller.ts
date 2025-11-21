@@ -116,7 +116,25 @@ const GetPageCheckOut = async (req: Request, res: Response) => {
     }
     const Target = await GetAllTargetForClient();
     const Factory = await GetAllFactoryForClient(); 
-    return res.render('client/product/checkout.ejs', { cartDetails: [], TotalPrice: 0, targets: Target, factories: Factory });
+    // Load current cart for user and try to attach crypto info (rate/total)
+    try {
+        const detailCart = await GetProductByCartDetail(user.id);
+        if (detailCart && detailCart.length > 0) {
+            const TotalPrice = detailCart.reduce((acc, item) => acc + (Number(item.price || 0) * (Number(item.quantityProduct || 0))), 0);
+            try {
+                const crypto = await getActiveCryptoInfo();
+                const cryptoTotal = convertVndToCrypto(TotalPrice, crypto.priceVND, crypto.decimals, 8);
+                return res.render('client/product/checkout.ejs', { cartDetails: detailCart, TotalPrice: TotalPrice, cryptoTotal, cryptoActive: crypto, cryptoRate: crypto.priceVND, targets: Target, factories: Factory });
+            } catch (err) {
+                console.warn('Could not fetch crypto info for checkout', err);
+                return res.render('client/product/checkout.ejs', { cartDetails: detailCart, TotalPrice: TotalPrice, cryptoActive: null, targets: Target, factories: Factory });
+            }
+        }
+        return res.render('client/product/checkout.ejs', { cartDetails: [], TotalPrice: 0, cryptoActive: null, targets: Target, factories: Factory });
+    } catch (e) {
+        console.error('Error loading cart for checkout', e);
+        return res.render('client/product/checkout.ejs', { cartDetails: [], TotalPrice: 0, cryptoActive: null, targets: Target, factories: Factory });
+    }
 };
 
 const PostAddQuantityToCart = async (req: Request, res: Response) => {
@@ -164,7 +182,14 @@ const PostAddQuantityToCart = async (req: Request, res: Response) => {
                     const selectedVariantId = cartItem ? cartItem.variantId : item.productVariantId;
                     return { ...item, isSelected, selectedVariantId };
                 });
-                return res.render('client/product/checkout.ejs', { cartDetails: CustomDetailCart, TotalPrice: TotalPrice, user: UserQuantityCart, targets: [], factories: [] });
+                try {
+                    const crypto = await getActiveCryptoInfo();
+                    const cryptoTotal = convertVndToCrypto(TotalPrice, crypto.priceVND, crypto.decimals, 8);
+                    return res.render('client/product/checkout.ejs', { cartDetails: CustomDetailCart, TotalPrice: TotalPrice, user: UserQuantityCart, cryptoTotal, cryptoActive: crypto, cryptoRate: crypto.priceVND, targets: [], factories: [] });
+                } catch (err) {
+                    console.warn('Could not fetch crypto info for checkout after update', err);
+                    return res.render('client/product/checkout.ejs', { cartDetails: CustomDetailCart, TotalPrice: TotalPrice, user: UserQuantityCart, cryptoActive: null, targets: [], factories: [] });
+                }
             }
             return res.render('client/product/checkout.ejs', { cartDetails: [], TotalPrice: 0, user: UserQuantityCart, targets: [], factories: [] });
         } else {
