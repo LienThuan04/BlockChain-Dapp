@@ -1,218 +1,237 @@
-# 📚 Tài liệu Chi tiết: Hệ thống Thanh toán bằng Blockchain (Cryptocurrency)
+# 📚 Tài liệu Chi Tiết — Luồng gọi hàm khi Thanh toán bằng CRYPTO
 
-## 📋 Mục lục
-1. [Tổng quan hệ thống](#tổng-quan)
-2. [Quy trình thanh toán](#quy-trình-thanh-toán)
-3. [Chi tiết từng hàm](#chi-tiết-từng-hàm)
-4. [Database Models](#database-models)
-5. [Luồng dữ liệu](#luồng-dữ-liệu)
-6. [Xử lý Refund](#xử-lý-refund)
+Mục tiêu của tài liệu này là mô tả theo thứ tự các hàm (frontend → backend → dịch vụ → DB → blockchain) được gọi khi
+người dùng bấm nút "Thanh toán" bằng phương thức CRYPTO trên trang Checkout (nhiều sản phẩm) hoặc nút "Buy with Crypto" trên trang Product (một sản phẩm).
 
----
+Tài liệu tập trung vào luồng gọi hàm thực tế — tên hàm, file tham chiếu, và mô tả ngắn về nhiệm vụ của từng hàm theo trình tự thực thi.
 
-## 🔄 Tổng quan
-
-Dự án này tích hợp hệ thống thanh toán bằng cryptocurrency (hiện tại hỗ trợ Ethereum, SGB, v.v.). 
-
-**Các thành phần chính:**
-- **Frontend**: MetaMask wallet (Web3.js v1.10.4)
-- **Backend**: Node.js + Express (TypeScript)
-- **Blockchain**: Ethereum-based networks (Coston testnet, Mainnet)
-- **Database**: Prisma ORM + MySQL
-
-**Luồng chung:**
-```
-Customer → MetaMask → Blockchain Transfer → Backend Confirmation → Database → Order Created
-                                         ↓
-                            CryptoTransaction Recorded
-```
+Lưu ý: tên hàm và đường dẫn dựa trên cấu trúc hiện tại của dự án. Nếu bạn đổi tên file/hàm trong repo, hãy đối chiếu lại.
 
 ---
 
-## 🔁 Thay Đổi Gần Đây
+## Tóm tắt luồng cao cấp
 
-- **Ý nghĩa trạng thái thanh toán**: Tùy chọn "Paid" trên giao diện giờ đây khớp với cả `PAYMENT_PAID` và `PAID`. Một số luồng (ví dụ PayPal) lưu `PAYMENT_PAID`, trong khi luồng thanh toán bằng crypto lưu `PAID`. Các bộ lọc và tài liệu đã được cập nhật để phản ánh điều này.
-- **Cấu trúc trả về của `CancelOrderById`**: hàm giờ trả về một đối tượng kết quả hoàn tiền chi tiết (gồm thông tin có cố gắng hoàn tiền hay không, phương thức, kết quả thành công, txHash nếu có, và thông điệp), không còn trả về boolean đơn giản.
-- **Loại bỏ phụ phí giao hàng cố định**: ứng dụng không còn tự cộng 30.000 VND cố định nữa; phí giao hàng được xử lý riêng và mặc định là 0 trừ khi có quy tắc giao hàng cụ thể.
-- **Thay đổi UX PayPal**: backend sẽ không tạo order nếu quá trình capture PayPal thất bại. Order chỉ được tạo sau khi capture/confirm thành công.
-- **Thay đổi UX MetaMask / Crypto**: frontend sẽ hiển thị modal yêu cầu cài MetaMask khi không phát hiện MetaMask; tùy chọn thanh toán CRYPTO sẽ bị vô hiệu nếu MetaMask không có hoặc người dùng từ chối cài đặt.
-- **Bộ lọc admin**: khi áp dụng bất kỳ bộ lọc đơn hàng nào, server sẽ trả về tất cả các hàng khớp trong một trang duy nhất (không phân trang) để admin có thể xem toàn bộ tập kết quả. Nên cân nhắc bổ sung giới hạn an toàn (ví dụ 1000 hàng) để tránh trả về tập dữ liệu quá lớn.
-- **Helper mới**: `GetLatestOrderForUser` trả về đơn hàng gần nhất của người dùng (sắp xếp theo `id` giảm dần).
-
-
-## 💳 Quy trình Thanh toán
-
-### Quy trình 1: Thanh toán từ Trang Chi tiết Sản phẩm (Single Product)
-
-```
-1. Customer chọn sản phẩm → Click "Buy with Crypto"
-2. Modal MetaMask popup
-3. Customer nhập số tiền crypto
-4. MetaMask sign transaction
-5. Gửi transaction lên blockchain
-6. Frontend nhận transactionHash
-7. Frontend gọi API: POST /api/confirm-crypto-payment
-   │
-   └─> Backend xác minh
-       │
-       ├─ Check user auth
-       ├─ Verify transaction on blockchain
-       ├─ Get product info
-       ├─ Get default variant
-       ├─ Calculate final price = product.price + variant.priceMore
-       ├─ Create Order (statusOrder: COMPLETED, paymentStatus: PAID)
-       ├─ Create OrderDetail (sản phẩm + variant + giá)
-       ├─ Record CryptoTransaction (lưu hash, số tiền, wallet, trạng thái)
-       ├─ Update ProductVariant (stock -1, sold +1)
-       ├─ Update Product (stock -1, sold +1)
-       └─ Return success + orderId
-8. Frontend nhận response
-9. Thông báo success + redirect orders list
-```
-
-### Quy trình 2: Thanh toán từ Giỏ hàng (Checkout - Multiple Products)
-
-```
-1. Customer trong giỏ hàng → Click "Checkout"
-2. Modal Checkout popup
-3. Customer nhập địa chỉ giao hàng, thông tin
-4. Chọn "Pay with Crypto"
-5. MetaMask popup
-6. Customer sign transaction
-7. Frontend gọi API: POST /api/confirm-crypto-payment
-   │
-   └─> Backend xác minh (transaction)
-       │
-       ├─ Check user auth
-       ├─ Validate transaction
-       ├─ Create Order (statusOrder: PENDING, paymentStatus: PAID)
-       │   - totalPrice = tổng giá từ tất cả items
-       │   - paymentRef = transactionHash
-       │
-       ├─ Record CryptoTransaction
-       │   - fromAddress = customer's wallet
-       │   - toAddress = admin's wallet
-       │   - amount = số token gửi
-       │   - amountInFiat = giá tính bằng VND
-       │   - status = SUCCESS
-       │
-       ├─ FOR EACH item in cartItems:
-       │   ├─ Get cart detail
-       │   ├─ Get product variant info
-       │   ├─ Calculate final price
-       │   ├─ Create OrderDetail (orderId, productId, variantId, qty, price)
-       │   ├─ Update ProductVariant (stock -, sold +)
-       │   ├─ Update Product (stock -, sold +)
-       │   ├─ Update Cart quantity
-       │   └─ Delete from cartdetail
-       │
-       └─ Return success + orderId
-8. Frontend nhận response
-9. Thông báo success + redirect
-```
+1. Frontend: người dùng chọn `CRYPTO` và bấm nút thanh toán → frontend xử lý MetaMask, ký và gửi giao dịch.
+2. Frontend nhận `transactionHash` → gọi API backend `POST /api/confirm-crypto-payment` (hoặc tương tự) kèm payload gồm `cartItems`, `vndAmount`, `transactionHash`, `fromAddress`, `amount`, `currency`.
+3. Backend: xác thực user, xác minh giao dịch trên blockchain (Web3), tạo Order/OrderDetail, lưu CryptoTransaction, cập nhật kho và trả về kết quả.
 
 ---
 
-## 🔧 Chi tiết từng Hàm
+## Luồng chi tiết theo thứ tự hàm (CRYPTO Checkout - nhiều sản phẩm)
 
-### 📍 File: `crypto-payment.controller.ts`
+Sau đây là sequence các hàm (frontend → server) — từ khi bấm nút CRYPTO cho tới khi order được tạo và lưu transaction:
 
-#### **Hàm 1: `getAdminWallet()`**
-```typescript
-export const getAdminWallet = async (req: Request, res: Response)
-```
+1) Frontend: form submit / button handler
+  - Vị trí: `public/client/js/...` hoặc trong template `checkout.ejs`
+  - Hàm/handler: (tùy implementation) thường là sự kiện `submit` trên form hoặc `click` handler cho nút `#btnCheckoutPay` khi `paymentMethod === 'CRYPTO'`.
+  - Nhiệm vụ: ngăn form gửi mặc định, kiểm tra MetaMask/Wallet trạng thái, gọi routine thanh toán crypto.
 
-**Mục đích:** Lấy địa chỉ ví admin để gửi tiền thanh toán
+2) Frontend: init wallet & request accounts
+  - File: `public/client/js/crypto-payment.js`
+  - Hàm: `initWeb3()`
+  - Nhiệm vụ: phát hiện MetaMask (window.ethereum), tạo `web3` instance, gọi `ethereum.request({ method: 'eth_requestAccounts' })` hoặc `web3.eth.getAccounts()` để lấy `fromAddress` (user wallet). Nếu không có MetaMask, hiển thị modal cài đặt.
 
-**Tham số:**
-- `req`: HTTP request (không cần body)
-- `res`: HTTP response
+3) Frontend: convert and display crypto amount (UX)
+  - File: `public/client/js/crypto-payment.js` & view templates (`cart.ejs`, `checkout.ejs`)
+  - Hàm: `convertVNDtoSGB()` (client helper) — tùy tên ở file client
+  - Nhiệm vụ: chuyển `vndAmount` sang token amount theo `cryptoRate` (show cho user trước khi ký tx).
 
-**Quy trình:**
-```
-1. Query database để tìm active wallet (isActive = true)
-   └─ Nếu không có trong DB, dùng ADMIN_WALLET_ADDRESS từ .env
-2. Kiểm tra wallet có tồn tại không
-   ├─ Không → Trả về 500 error
-   └─ Có → Trả về JSON { adminWallet: "0x..." }
-```
+4) Frontend: prepare & send transaction via Web3/MetaMask
+  - File: `public/client/js/crypto-payment.js`
+  - Hàm: `sendCryptoPayment()` (hoặc inline handler) — sử dụng `web3.eth.sendTransaction` hoặc gọi contract `transfer(...)` nếu ERC20
+  - Nhiệm vụ: build transaction (to = adminWallet, value hoặc token transfer), gọi `ethereum.request({ method: 'eth_sendTransaction', params: [...] })` hoặc `web3.eth.sendSignedTransaction(...)` nếu có signature
+  - Kết quả: trả về `transactionHash` khi giao dịch được broadcast (thường trước khi mined).
 
-**Return:**
-```json
-{
-  "adminWallet": "0x76A1F56a5a0a41f47eD6232e6605D795C4DcF153"
+5) Frontend: POST confirm request to backend
+  - Endpoint: `POST /api/confirm-crypto-payment` (the doc and routes indicate this endpoint)
+  - Payload: {
+     cartItems, vndAmount, transactionHash, amount (token), currency (SGB/ETH), fromAddress, receiverName, receiverPhone, receiverAddress, ...
+    }
+  - Hàm: `confirmCryptoPaymentClient()` (in client script) or direct XHR/fetch call
+
+6) Backend controller: receive confirm request
+  - File: `src/controllers/crypto-payment.controller.ts` (or similar; doc refers to `crypto-payment.controller.ts`)
+  - Handler function: `confirmCryptoPayment(req, res)`
+  - Nhiệm vụ:
+    - Lấy user (req.user) — kiểm tra authentication
+    - Parse payload: `transactionHash`, `cartItems`, `vndAmount`, `fromAddress`, `amount`, `currency`.
+
+7) Backend service: verify transaction on blockchain
+  - File: a service using Web3 (could be in `services/crypto` or an on-chain helper)
+  - Hàm: `verifyTransaction(transactionHash, expectedToAddress, expectedAmount, network)`
+  - Nhiệm vụ: sử dụng `web3.eth.getTransaction` / `web3.eth.getTransactionReceipt` để
+    - Check the transaction exists
+    - Ensure `to` matches admin wallet
+    - Ensure `value` or token transfer amount >= expected token amount
+    - Optionally check confirmations or receipt.status === true
+  - Nếu verification fail → return 4xx with message (frontend should show error)
+
+8) Backend: fetch active crypto metadata and admin wallet
+  - File / functions referenced in repo:
+    - `getActiveCryptoInfo()` — returns `{ priceVND, decimals, code, ... }` (in `src/services/crypto/crypto.service.ts`)
+    - `getAdminWallet()` — returns admin receiving address (either from DB CryptoWallet or fallback `ADMIN_WALLET_ADDRESS` env)
+  - Nhiệm vụ: ensure we used the right token (SGB) and the admin wallet matches expected receiver
+
+9) Backend: create Order (within DB transaction)
+  - File: likely within `src/services/client/order.service.ts` or inside `confirmCryptoPayment` controller using prisma
+  - Hàm: `createOrderForCrypto(userId, cartItems, totalVnd, paymentRef, receiverInfo)` (conceptual)
+  - Nhiệm vụ:
+    - Create `Order` record with fields: `userId`, `totalPrice: vndAmount`, `paymentMethod: 'CRYPTO'`, `paymentStatus: 'PAID'`, `paymentRef: transactionHash`, `statusOrder: 'PENDING'` (or `COMPLETED` for single-product flow)
+
+10) Backend: record CryptoTransaction
+   - Model: `CryptoTransaction` (Prisma model) — see schema in repo
+   - Hàm: `createCryptoTransaction({ transactionHash, fromAddress, toAddress, amount, amountInFiat, status, orderId, cryptoId })`
+   - Nhiệm vụ: persist blockchain record for auditing/reporting
+
+11) Backend: create OrderDetails and update stock
+   - For each cart item:
+    - Determine variant and final price (product.price + variant.priceMore)
+    - Create `OrderDetail` row
+    - Update `ProductVariant` quantity & `sold`
+    - Update `Product` quantity & `sold`
+    - Remove cartdetail row from user's cart
+   - These updates should be performed inside the same DB transaction when possible to avoid inconsistencies
+
+12) Backend: commit transaction and respond
+   - Return `{ success: true, orderId: newOrder.id }` (or error). Frontend will display success and redirect to order history
+
+13) Frontend: post-confirm handling
+   - On success, frontend shows confirmation and redirects user to orders list / detail page
+   - On failure, show error and allow retry
+
+---
+
+## Các hàm/đơn vị chính (tập trung) — mapping tên thực tế trong repo
+
+- `initWeb3()` — front-end helper to detect MetaMask and obtain accounts (`public/client/js/crypto-payment.js`).
+- `convertVNDtoSGB(vndAmount)` — front-end helper show estimated token amount (client UI conversion).
+- `sendCryptoPayment()` / `sendTransaction()` — front-end routine that calls MetaMask / web3 to broadcast the transaction and returns `transactionHash`.
+- `POST /api/confirm-crypto-payment` → `confirmCryptoPayment(req, res)` — backend controller that coordinates verification and order creation (`src/controllers/crypto-payment.controller.ts` or equivalent).
+- `verifyTransaction(transactionHash, expectedTo, expectedAmount)` — backend web3 helper to inspect on-chain tx and receipt.
+- `getAdminWallet()` — returns active admin wallet (`src/controllers/crypto-payment.controller.ts` or `src/services/crypto/...`).
+- `getActiveCryptoInfo()` — returns active `Cryptocurrency` row (priceVND, decimals, code).
+- `convertVndToCrypto(amountVND, priceVND, decimals, displayDecimals)` — server-side helper to convert VND -> crypto (used to populate cart/checkout views consistently).
+- `createOrderForCrypto(...)` (conceptual) — service that creates Order and OrderDetails, updates stock, and returns created `orderId`.
+- `createCryptoTransaction(...)` — service inserting `CryptoTransaction` record in DB.
+- `CancelOrderById(orderId, user)` — service that may attempt refunds (if order.paymentMethod === 'CRYPTO') and now returns a detailed refund result object.
+
+### MetaMask / Web3 Call Sites (repo mapping)
+
+Dưới đây là những nơi trong repo trực tiếp gọi MetaMask / provider (window.ethereum) hoặc dùng Web3 để gửi/gọi giao dịch, cùng đoạn mã trích dẫn để bạn dễ tham khảo và copy/paste.
+
+- File: `public/client/js/crypto-payment.js`
+  - `checkAndInstallMetaMask()` — hiển thị modal cài MetaMask nếu không có.
+  - `initWeb3()` — tạo `web3` từ `window.ethereum`, gọi `eth_requestAccounts`, lấy `userAccount`, và gọi `wallet_switchEthereumChain` để chuyển sang Coston.
+    ```js
+    web3 = new Web3(window.ethereum);
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const accounts = await web3.eth.getAccounts();
+    userAccount = accounts[0];
+    await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x10' }] });
+    ```
+
+  - `convertVNDtoSGB(vndAmount)` — helper chuyển VND -> SGB (client-side display):
+    ```js
+    function convertVNDtoSGB(vndAmount) {
+        return (parseInt(vndAmount) / VND_TO_SGB_RATE).toFixed(6);
+    }
+    ```
+
+  - `showCryptoPaymentModal(options)` — dựng modal thanh toán, attach event listener cho nút xác nhận, truyền `adminWallet`, `weiValue`, `cartItems`, v.v.
+
+  - `confirmCheckoutCryptoPayment(adminAddress, weiValue, vndAmount, ...)` — hàm chính gửi tx và confirm với server. Gửi giao dịch qua MetaMask bằng `eth_sendTransaction`:
+    ```js
+    const params = [{ from: userAccount, to: adminAddress, value: web3.utils.toHex(weiValue) }];
+    txHash = await window.ethereum.request({ method: 'eth_sendTransaction', params });
+    // fallback:
+    const receipt = await web3.eth.sendTransaction({ from: userAccount, to: adminAddress, value: weiValue });
+    txHash = receipt && (receipt.transactionHash || receipt);
+    ```
+
+  - Sau khi có `txHash`, hàm gọi API xác nhận với server (ví dụ `/api/crypto/confirm-payment`):
+    ```js
+    await fetch('/api/crypto/confirm-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ transactionHash: txHash, amount: ..., fromAddress: userAccount, vndAmount: ... })
+    });
+    ```
+
+- File: `src/views/client/product/payment-section.ejs` and `src/views/client/product/checkout.ejs`
+  - Template may include inlined calls to the client scripts and use data-attributes to pass `TotalPrice`, `cryptoRate`, etc. The client JS reads these attributes to compute `priceInSGB`.
+
+- Routes / Server handlers that client calls:
+  - `GET /api/get-admin-wallet` → `getAdminWallet` (server) — File: `src/controllers/ClientAPI/crypto-payment.controller.ts`.
+    ```ts
+    const activeWalletRecord = await prisma.cryptoWallet.findFirst({ where: { isActive: true } });
+    const adminWallet = activeWalletRecord?.walletAddress || process.env.ADMIN_WALLET_ADDRESS;
+    res.json({ adminWallet });
+    ```
+
+  - `POST /api/crypto/confirm-payment` and `POST /api/orders/confirm-crypto-payment` → `confirmCryptoPayment` (server) — same controller `src/controllers/ClientAPI/crypto-payment.controller.ts`.
+
+    Important: current implementation in the controller records the crypto transaction and creates orders immediately without calling a server-side on-chain verification helper. Recommended improvement is to add `verifyTransaction(transactionHash, expectedTo, expectedAmount)` (server-side Web3) BEFORE creating the Order.
+
+### Recommended server-side verifyTransaction (example)
+
+Add a server helper (e.g., `src/services/crypto/onchain.service.ts`) to verify tx on-chain before persisting the order. Example conceptual code:
+
+```js
+// pseudo-code
+async function verifyTransaction(web3, txHash, expectedTo, expectedWei) {
+  const tx = await web3.eth.getTransaction(txHash);
+  if (!tx) throw new Error('Transaction not found');
+  if ((tx.to || '').toLowerCase() !== expectedTo.toLowerCase()) throw new Error('Recipient mismatch');
+  // if native tx: compare tx.value (hex) with expectedWei
+  // for token transfers, parse logs or call getTransactionReceipt and inspect logs
+  const receipt = await web3.eth.getTransactionReceipt(txHash);
+  if (!receipt || receipt.status !== true) throw new Error('Transaction not successful');
+  return { tx, receipt };
 }
 ```
 
-**Sử dụng:** Frontend gọi khi load trang checkout để biết gửi tiền cho ai
+Bạn có thể gọi helper này at the top of `confirmCryptoPayment` and only proceed to create the Order when verification passes.
 
 ---
 
-#### **Hàm 2: `confirmCryptoPayment()` - Checkout (Multiple Products)**
-```typescript
-export const confirmCryptoPayment = async (req: Request, res: Response)
-```
+Tôi đã giữ phần trên (flow & DB models) nguyên vẹn — phần này bổ sung bản đồ chi tiết các hàm gọi MetaMask/Web3 và ví dụ mã để dễ áp dụng. Nếu bạn muốn, tôi có thể:
 
-**Mục đích:** Xác nhận thanh toán từ giỏ hàng, tạo order với nhiều sản phẩm
+- (A) Tự động chèn `file:line` cho từng hàm trong phần này (scan repo và map chính xác), hoặc
+- (B) Thêm ví dụ code server-side `verifyTransaction` và chỉnh `confirmCryptoPayment` để gọi verify trước khi tạo order (tôi có thể tạo patch cho controller).
 
-**Tham số (Request Body):**
-```typescript
-{
-  productId?: number,              // Nếu từ single product
-  transactionHash: string,          // Hash transaction từ blockchain
-  amount: string,                   // Số lượng token gửi
-  currency: string,                 // Mã token (ETH, SGB, etc)
-  receiverName: string,             // Tên người nhận
-  receiverPhone: string,            // Điện thoại
-  receiverAddress: string,          // Địa chỉ giao hàng
-  receiverEmail?: string,           // Email
-  receiverNote?: string,            // Ghi chú
-  cartItems?: Array<{               // Danh sách items (từ giỏ hàng)
-    id: number,                     // Cart detail ID
-    productId: number,
-    productVariantId: number,
-    quantity: number
-  }>,
-  vndAmount: number,                // Tổng giá tính bằng VND
-  fromAddress: string               // Wallet của customer
-}
-```
+Chọn A hoặc B hoặc cả hai.
+---
 
-**Quy trình chi tiết:**
+## Hoàn tiền (Refund) — gọi hàm theo thứ tự
 
-##### **Step 1: Xác thực người dùng**
-```typescript
-const userId = req.user?.id;
-if (!userId) return 401 Unauthorized
-```
-- Kiểm tra user đã login
-- Lấy `userId` từ JWT token
+Khi admin hoặc user trigger cancel-order cho đơn đã thanh toán bằng crypto, sequence hàm thường là:
 
-##### **Step 2: Xử lý Multiple Items (từ giỏ hàng)**
-```typescript
-if (cartItems && Array.isArray(cartItems) && cartItems.length > 0)
-```
+1. Controller endpoint: `POST /api/cancel-order/:id` → handler `PostCancelOrder(req, res)` in `src/controllers/client/client.controller.ts`
+2. Service: `CancelOrderById(orderId, user)` (in `src/services/client/user.service.ts`)
+  - Trước hết xác định `order.paymentMethod` và `order.paymentStatus`.
+3. Nếu `paymentMethod === 'CRYPTO'` và trạng thái phù hợp → tìm `CryptoTransaction` gốc liên quan.
+4. Tìm admin active wallet / private key (`getAdminWallet()` / `getActiveAdminWalletWithPrivateKey()`)
+5. Ký tx hoàn tiền và gửi lên mạng (Web3) → `sendSignedTransaction(signedTx)` (thực hiện hoàn tiền on-chain)
+6. Ghi một bản `CryptoTransaction` mới cho refund, cập nhật `CryptoTransaction` gốc trạng thái `REFUNDED`, và cập nhật `Order` (`statusOrder = 'CANCELLED'`, `paymentStatus = 'REFUNDED'`).
+7. Trả về object chi tiết: `{ attempted: true|false, method: 'CRYPTO'|null, success: boolean, txHash?: string, message?: string }`.
 
-**2.1 Tạo Order trong transaction:**
-```typescript
-const newOrder = await prisma.order.create({
-  data: {
-    userId: userId,
-    totalPrice: parseInt(vndAmount),          // Tổng giá VND
-    receiverName: receiverName || '',
-    receiverPhone: receiverPhone || '',
-    receiverAddress: receiverAddress || '',
-    receiverEmail: receiverEmail || '',
-    receiverNote: receiverNote || '',
-    statusOrder: 'PENDING',                   // Chờ xác nhận
-    paymentMethod: 'CRYPTO',
-    paymentStatus: 'PAID',                    // Đã thanh toán
-    paymentRef: transactionHash               // Lưu hash
-  }
-});
-```
+---
 
-| Field | Giá trị | Ý nghĩa |
+## Lưu ý vận hành và kiểm tra
+
+- Luôn verify on-chain: kiểm tra `to` address === admin wallet, `amount` >= expected.
+- Giữ định dạng `amount` token dưới dạng `string` để tránh mất precision.
+- Thực hiện các thao tác tạo đơn/ghi transaction/update stock trong cùng transaction DB khi có thể.
+- Không lưu private key plaintext trong repo/DB production. Dùng KMS / Vault.
+
+---
+
+Nếu bạn muốn, tôi có thể:
+- Liệt kê chính xác tên hàm trong từng file (scan repo và tạo mapping chính xác), hoặc
+- Chạy search để chèn đường dẫn file và tên hàm chính xác vào mọi bước để tài liệu trở nên “clickable” (với đường dẫn file).
+
+Bạn muốn tôi tiếp tục và tự động map mọi hàm thực tế trong repo (tên file + hàm)?
 |-------|--------|--------|
 | `statusOrder` | PENDING | Đang chờ xác nhận từ admin |
 | `paymentStatus` | PAID | Thanh toán đã xong (crypto đã gửi) |
