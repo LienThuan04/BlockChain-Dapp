@@ -194,13 +194,6 @@ async function verifyTransaction(web3, txHash, expectedTo, expectedWei) {
 Bạn có thể gọi helper này at the top of `confirmCryptoPayment` and only proceed to create the Order when verification passes.
 
 ---
-
-Tôi đã giữ phần trên (flow & DB models) nguyên vẹn — phần này bổ sung bản đồ chi tiết các hàm gọi MetaMask/Web3 và ví dụ mã để dễ áp dụng. Nếu bạn muốn, tôi có thể:
-
-- (A) Tự động chèn `file:line` cho từng hàm trong phần này (scan repo và map chính xác), hoặc
-- (B) Thêm ví dụ code server-side `verifyTransaction` và chỉnh `confirmCryptoPayment` để gọi verify trước khi tạo order (tôi có thể tạo patch cho controller).
-
-Chọn A hoặc B hoặc cả hai.
 ---
 
 ## Hoàn tiền (Refund) — gọi hàm theo thứ tự
