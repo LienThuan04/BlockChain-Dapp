@@ -20,7 +20,7 @@ const prisma = new PrismaClient();
 
 const { ethers } = require('ethers');
 
-async function ensureCryptoRecord() {
+async function ensureCryptoRecord() { /* đảm bảo có ít nhất một bản ghi Cryptocurrency */
   let c = await prisma.cryptocurrency.findFirst();
   if (!c) {
     c = await prisma.cryptocurrency.create({
@@ -41,15 +41,15 @@ async function ensureCryptoRecord() {
   return c;
 }
 
-async function quickMode(assignTo) {
-  if (!assignTo || !/^0x[a-fA-F0-9]{40}$/.test(assignTo)) {
+async function quickMode(assignTo) { /* chế độ nhanh */
+  if (!assignTo || !/^0x[a-fA-F0-9]{40}$/.test(assignTo)) { /* kiểm tra định dạng địa chỉ ví */
     console.error('Quick mode requires a valid wallet address as second arg. Example: node scripts/backfill-crypto-transactions.js quick 0xAbc...');
     process.exit(1);
   }
 
-  const cryptoRecord = await ensureCryptoRecord();
+  const cryptoRecord = await ensureCryptoRecord(); /* đảm bảo có ít nhất một bản ghi Cryptocurrency */
 
-  const orders = await prisma.order.findMany({
+  const orders = await prisma.order.findMany({ /* lấy tất cả các đơn hàng có phương thức thanh toán là CRYPTO và paymentRef không rỗng */
     where: {
       paymentMethod: 'CRYPTO',
       paymentRef: { not: null }
@@ -58,13 +58,13 @@ async function quickMode(assignTo) {
   });
 
   let created = 0;
-  for (const order of orders) {
-    if (order.cryptoTransactions && order.cryptoTransactions.length > 0) {
+  for (const order of orders) { /* lặp qua từng đơn hàng */
+    if (order.cryptoTransactions && order.cryptoTransactions.length > 0) { /* nếu đơn hàng đã có cryptoTransaction thì bỏ qua */
       console.log(`Skipping order ${order.id} (already has cryptoTransaction)`);
       continue;
     }
     try {
-      await prisma.cryptoTransaction.create({
+      await prisma.cryptoTransaction.create({ /* tạo bản ghi cryptoTransaction mới */
         data: {
           transactionHash: String(order.paymentRef || ''),
           fromAddress: '',
@@ -88,16 +88,16 @@ async function quickMode(assignTo) {
   await prisma.$disconnect();
 }
 
-async function rpcMode(rpcUrl) {
-  const RPC = rpcUrl || process.env.RPC_URL;
+async function rpcMode(rpcUrl) { /* chế độ RPC */
+  const RPC = rpcUrl || process.env.RPC_URL; /* lấy URL RPC từ tham số hoặc biến môi trường */
   if (!RPC) {
     console.error('RPC mode requires RPC URL as second arg or RPC_URL env var');
     process.exit(1);
   }
-  const provider = new ethers.providers.JsonRpcProvider(RPC);
-  const cryptoRecord = await ensureCryptoRecord();
+  const provider = new ethers.providers.JsonRpcProvider(RPC); /* tạo provider RPC */
+  const cryptoRecord = await ensureCryptoRecord(); /* đảm bảo có ít nhất một bản ghi Cryptocurrency */
 
-  const orders = await prisma.order.findMany({
+  const orders = await prisma.order.findMany({ /* lấy tất cả các đơn hàng có phương thức thanh toán là CRYPTO và paymentRef không rỗng */
     where: {
       paymentMethod: 'CRYPTO',
       paymentRef: { not: null }

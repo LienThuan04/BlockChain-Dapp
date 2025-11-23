@@ -1,12 +1,12 @@
 const hre = require("hardhat");
 
-async function main() {
-  const LaptopMarketplace = await hre.ethers.getContractFactory("LaptopMarketplace");
-  const laptopMarketplace = await LaptopMarketplace.deploy();
+async function main() { /* triển khai hợp đồng LaptopMarketplace */
+  const LaptopMarketplace = await hre.ethers.getContractFactory("LaptopMarketplace"); /* lấy đối tượng hợp đồng */
+  const laptopMarketplace = await LaptopMarketplace.deploy(); /* triển khai hợp đồng */
 
-  await laptopMarketplace.deployed();
+  await laptopMarketplace.deployed(); /* chờ hợp đồng được triển khai */
 
-  console.log("LaptopMarketplace deployed to:", laptopMarketplace.address);
+  console.log("LaptopMarketplace deployed to:", laptopMarketplace.address); /* in ra địa chỉ hợp đồng */
 }
 
 main().catch((error) => {

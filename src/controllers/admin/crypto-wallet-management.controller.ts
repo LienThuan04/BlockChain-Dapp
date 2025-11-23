@@ -4,14 +4,14 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // Get wallet management page
-export const getWalletManagementPage = async (req: Request, res: Response): Promise<void> => {
+export const getWalletManagementPage = async (req: Request, res: Response): Promise<void> => { // trang quản lý ví
     try {
-        // Get current active wallet
+        // lấy ví đang hoạt động
         const activeWallet = await (prisma as any).cryptoWallet.findFirst({
             where: { isActive: true }
         });
 
-        // Get all wallets history
+        // Lấy lịch sử tất cả các ví
         const walletsHistory = await (prisma as any).cryptoWallet.findMany({
             orderBy: { createdAt: 'desc' },
             take: 10
@@ -33,7 +33,7 @@ export const getWalletManagementPage = async (req: Request, res: Response): Prom
 };
 
 // Add new wallet
-export const addNewWallet = async (req: Request, res: Response): Promise<void> => {
+export const addNewWallet = async (req: Request, res: Response): Promise<void> => { // thêm ví mới
     try {
         const { walletAddress, privateKey } = req.body;
 
@@ -92,7 +92,7 @@ export const addNewWallet = async (req: Request, res: Response): Promise<void> =
 };
 
 // Switch active wallet
-export const switchActiveWallet = async (req: Request, res: Response): Promise<void> => {
+export const switchActiveWallet = async (req: Request, res: Response): Promise<void> => { // chuyển ví hoạt động
     try {
         const { walletId } = req.body;
 
@@ -140,7 +140,7 @@ export const switchActiveWallet = async (req: Request, res: Response): Promise<v
 };
 
 // Delete wallet
-export const deleteWallet = async (req: Request, res: Response): Promise<void> => {
+export const deleteWallet = async (req: Request, res: Response): Promise<void> => { // xóa ví
     try {
         const { walletId } = req.body;
 
@@ -180,7 +180,7 @@ export const deleteWallet = async (req: Request, res: Response): Promise<void> =
 };
 
 // Get wallet details (show private key - be careful!)
-export const getWalletDetails = async (req: Request, res: Response): Promise<void> => {
+export const getWalletDetails = async (req: Request, res: Response): Promise<void> => { // lấy chi tiết ví (hiện private key - cẩn thận!)
     try {
         const { walletId } = req.params;
 
