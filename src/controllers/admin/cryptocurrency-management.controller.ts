@@ -1,14 +1,11 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { ActivateCryptocurrencyById, CreateNewCryptocurrency, DeactivateOtherCryptocurrencies, DeleteCryptocurrencyById, GetActiveCryptocurrency, GetAllCurencies, GetCryptocurrencyById, GetExistingCryptoByCode, UpdateCryptocurrencyPriceById } from 'services/admin/CryptoInWallet.service';
+import { CountCryptoTransactionsForAdminWallet } from 'services/admin/cryptoTransaction.service';
 
 // Get cryptocurrency management page
 export const getCryptocurrencyManagementPage = async (req: Request, res: Response): Promise<void> => {
     try {
-        const cryptocurrencies = await (prisma as any).cryptocurrency.findMany({
-            orderBy: { createdAt: 'desc' }
-        });
+        const cryptocurrencies = await GetAllCurencies();
 
         res.render('admin/cryptocurrency/management', {
             title: 'Cryptocurrency Management',
@@ -31,31 +28,26 @@ export const addCryptocurrency = async (req: Request, res: Response): Promise<vo
             return;
         }
 
-        // Check if code already exists
-        const existingCrypto = await (prisma as any).cryptocurrency.findUnique({
-            where: { code: code.toUpperCase() }
-        });
+        // kiem tra mã loại tiền ảo đã tồn tại chưa
+        const existingCrypto = await GetExistingCryptoByCode(code.toUpperCase());
 
         if (existingCrypto) {
             res.status(400).json({ error: 'Mã loại tiền ảo này đã tồn tại' });
             return;
         }
 
-        // Create new cryptocurrency
-        const newCrypto = await (prisma as any).cryptocurrency.create({
-            data: {
-                name,
-                code: code.toUpperCase(),
-                symbol,
-                priceVND: parseFloat(priceVND) || 8750,
-                chainName,
-                rpcUrl,
-                chainId,
-                contractAddress: contractAddress || null,
-                decimals: parseInt(decimals) || 18,
-                description: description || null,
-                isActive: false
-            }
+        // tao loại tiền ảo mới
+        const newCrypto = await CreateNewCryptocurrency({
+            name,
+            code,
+            symbol,
+            priceVND,
+            chainName,
+            rpcUrl,
+            chainId,
+            contractAddress,
+            decimals,
+            description
         });
 
         res.json({ success: true, message: 'Thêm loại tiền ảo thành công', crypto: newCrypto });
@@ -75,17 +67,11 @@ export const setActiveCryptocurrency = async (req: Request, res: Response): Prom
             return;
         }
 
-        // Deactivate all other cryptos
-        await (prisma as any).cryptocurrency.updateMany({
-            where: { id: { not: parseInt(cryptoId) } },
-            data: { isActive: false }
-        });
+        // huy kích hoạt tất cả các loại tiền ảo khác
+        await DeactivateOtherCryptocurrencies(parseInt(cryptoId));
 
-        // Activate selected crypto
-        const activeCrypto = await (prisma as any).cryptocurrency.update({
-            where: { id: parseInt(cryptoId) },
-            data: { isActive: true }
-        });
+        // kích hoạt loại tiền ảo theo id
+        const activeCrypto = await ActivateCryptocurrencyById(parseInt(cryptoId));
 
         res.json({ success: true, message: 'Kích hoạt loại tiền ảo thành công', crypto: activeCrypto });
     } catch (error) {
@@ -104,23 +90,16 @@ export const updateCryptocurrency = async (req: Request, res: Response): Promise
             return;
         }
 
-        // Get current crypto
-        const currentCrypto = await (prisma as any).cryptocurrency.findUnique({
-            where: { id: parseInt(cryptoId) }
-        });
+        // Lấy thông tin loại tiền ảo hiện tại
+        const currentCrypto = await GetCryptocurrencyById(parseInt(cryptoId));
 
         if (!currentCrypto) {
             res.status(404).json({ error: 'Loại tiền ảo không tồn tại' });
             return;
         }
 
-        // Update only price for active crypto
-        const updatedCrypto = await (prisma as any).cryptocurrency.update({
-            where: { id: parseInt(cryptoId) },
-            data: {
-                priceVND: priceVND ? parseFloat(priceVND) : currentCrypto.priceVND
-            }
-        });
+        // Cập nhật giá tiền ảo cho loại tiền ảo theo id
+        const updatedCrypto = await UpdateCryptocurrencyPriceById(parseInt(cryptoId), parseFloat(priceVND));
 
         res.json({ success: true, message: 'Cập nhật giá tiền ảo thành công', crypto: updatedCrypto });
     } catch (error) {
@@ -140,9 +119,7 @@ export const deleteCryptocurrency = async (req: Request, res: Response): Promise
         }
 
         // Get crypto to check if it's active
-        const crypto = await (prisma as any).cryptocurrency.findUnique({
-            where: { id: parseInt(cryptoId) }
-        });
+        const crypto = await GetCryptocurrencyById(parseInt(cryptoId));
 
         if (!crypto) {
             res.status(404).json({ error: 'Loại tiền ảo không tồn tại' });
@@ -154,10 +131,8 @@ export const deleteCryptocurrency = async (req: Request, res: Response): Promise
             return;
         }
 
-        // Check if crypto has transactions
-        const transactionCount = await (prisma as any).cryptoTransaction.count({
-            where: { cryptoId: parseInt(cryptoId) }
-        });
+        // Kiểm tra đếm xem có giao dịch nào liên quan đến loại tiền ảo này không
+        const transactionCount = await CountCryptoTransactionsForAdminWallet(parseInt(cryptoId));
 
         if (transactionCount > 0) {
             res.status(400).json({ error: 'Không thể xóa loại tiền ảo có giao dịch liên quan' });
@@ -165,9 +140,7 @@ export const deleteCryptocurrency = async (req: Request, res: Response): Promise
         }
 
         // Delete cryptocurrency
-        await (prisma as any).cryptocurrency.delete({
-            where: { id: parseInt(cryptoId) }
-        });
+        await DeleteCryptocurrencyById(parseInt(cryptoId));
 
         res.json({ success: true, message: 'Xóa loại tiền ảo thành công' });
     } catch (error) {
@@ -176,12 +149,10 @@ export const deleteCryptocurrency = async (req: Request, res: Response): Promise
     }
 };
 
-// Get active cryptocurrency (API endpoint)
+// lay loại tiền ảo đang được kích hoạt 
 export const getActiveCryptocurrency = async (req: Request, res: Response): Promise<void> => {
     try {
-        const activeCrypto = await (prisma as any).cryptocurrency.findFirst({
-            where: { isActive: true }
-        });
+        const activeCrypto = await GetActiveCryptocurrency();
 
         if (!activeCrypto) {
             // Return default SGB if no active crypto
@@ -216,10 +187,8 @@ export const getCryptocurrencyDetails = async (req: Request, res: Response): Pro
             res.status(400).json({ error: 'ID loại tiền ảo không hợp lệ' });
             return;
         }
-
-        const crypto = await (prisma as any).cryptocurrency.findUnique({
-            where: { id: parseInt(cryptoId) }
-        });
+        // Lấy thông tin loại tiền ảo theo id
+        const crypto = await GetCryptocurrencyById(parseInt(cryptoId));
 
         if (!crypto) {
             res.status(404).json({ error: 'Loại tiền ảo không tồn tại' });
@@ -236,9 +205,7 @@ export const getCryptocurrencyDetails = async (req: Request, res: Response): Pro
 // Get active cryptocurrency with price - for payment conversion
 export const getActiveCryptocurrencyPrice = async (req: Request, res: Response): Promise<void> => {
     try {
-        const activeCrypto = await (prisma as any).cryptocurrency.findFirst({
-            where: { isActive: true }
-        });
+        const activeCrypto = await GetActiveCryptocurrency();
 
         if (!activeCrypto) {
             // Return default SGB if no active crypto found
@@ -270,9 +237,7 @@ export const getEditPage = async (req: Request, res: Response) => {
     try {
         const cryptoId = parseInt(req.params.id);
         
-        const crypto = await (prisma as any).cryptocurrency.findUnique({
-            where: { id: cryptoId }
-        });
+        const crypto = await GetCryptocurrencyById(cryptoId);
         
         if (!crypto) {
             return res.status(404).render('404', {

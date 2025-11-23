@@ -1,21 +1,14 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { ActivateWalletById, addNewWalletAndActivate, DeactivateCurrentActiveWallet, DelWalletById, FindWalletById, GetActiveWallet, GetAllHistoryWallets, GetExistingWallet } from 'services/admin/WalletCrypto.service';
 
 // Get wallet management page
 export const getWalletManagementPage = async (req: Request, res: Response): Promise<void> => { // trang quản lý ví
     try {
         // lấy ví đang hoạt động
-        const activeWallet = await (prisma as any).cryptoWallet.findFirst({
-            where: { isActive: true }
-        });
+        const activeWallet = await GetActiveWallet();
 
         // Lấy lịch sử tất cả các ví
-        const walletsHistory = await (prisma as any).cryptoWallet.findMany({
-            orderBy: { createdAt: 'desc' },
-            take: 10
-        });
+        const walletsHistory = await GetAllHistoryWallets();
 
         res.render('admin/crypto-wallet/management.ejs', {
             activeWallet: activeWallet,
@@ -48,30 +41,19 @@ export const addNewWallet = async (req: Request, res: Response): Promise<void> =
             return;
         }
 
-        // Check if wallet already exists
-        const existingWallet = await (prisma as any).cryptoWallet.findUnique({
-            where: { walletAddress }
-        });
+        // kiem tra ví đã tồn tại chưa
+        const existingWallet = await GetExistingWallet(walletAddress);
 
         if (existingWallet) {
             res.status(400).json({ error: 'Ví này đã được thêm rồi' });
             return;
         }
 
-        // Deactivate current active wallet
-        await (prisma as any).cryptoWallet.updateMany({
-            where: { isActive: true },
-            data: { isActive: false }
-        });
+        // huy kích hoạt tất cả các ví hiện tại
+        await DeactivateCurrentActiveWallet();
 
-        // Add new wallet and set as active
-        const newWallet = await (prisma as any).cryptoWallet.create({
-            data: {
-                walletAddress,
-                privateKey,
-                isActive: true
-            }
-        });
+        // them ví mới và đặt làm hoạt động
+        const newWallet = await addNewWalletAndActivate(walletAddress, privateKey);
 
         // Update environment variable (for runtime)
         process.env.ADMIN_WALLET_ADDRESS = walletAddress;
@@ -91,7 +73,7 @@ export const addNewWallet = async (req: Request, res: Response): Promise<void> =
     }
 };
 
-// Switch active wallet
+// đổi ví hoạt động
 export const switchActiveWallet = async (req: Request, res: Response): Promise<void> => { // chuyển ví hoạt động
     try {
         const { walletId } = req.body;
@@ -101,26 +83,19 @@ export const switchActiveWallet = async (req: Request, res: Response): Promise<v
             return;
         }
 
-        // Get wallet to switch to
-        const wallet = await (prisma as any).cryptoWallet.findUnique({
-            where: { id: parseInt(walletId) }
-        });
+        // Tìm ví theo ID
+        const wallet = await FindWalletById(parseInt(walletId));
 
         if (!wallet) {
             res.status(404).json({ error: 'Không tìm thấy ví' });
             return;
         }
 
-        // Deactivate all wallets
-        await (prisma as any).cryptoWallet.updateMany({
-            data: { isActive: false }
-        });
+        // huy kích hoạt tất cả các ví hiện tại
+        await DeactivateCurrentActiveWallet();
 
-        // Activate selected wallet
-        await (prisma as any).cryptoWallet.update({
-            where: { id: parseInt(walletId) },
-            data: { isActive: true }
-        });
+        // kich hoạt ví đã chọn
+        await ActivateWalletById(parseInt(walletId));
 
         // Update environment variable
         process.env.ADMIN_WALLET_ADDRESS = wallet.walletAddress;
@@ -149,9 +124,7 @@ export const deleteWallet = async (req: Request, res: Response): Promise<void> =
             return;
         }
 
-        const wallet = await (prisma as any).cryptoWallet.findUnique({
-            where: { id: parseInt(walletId) }
-        });
+        const wallet = await FindWalletById(parseInt(walletId));
 
         if (!wallet) {
             res.status(404).json({ error: 'Không tìm thấy ví' });
@@ -165,9 +138,7 @@ export const deleteWallet = async (req: Request, res: Response): Promise<void> =
         }
 
         // Delete wallet
-        await (prisma as any).cryptoWallet.delete({
-            where: { id: parseInt(walletId) }
-        });
+        await DelWalletById(parseInt(walletId));
 
         res.json({
             success: true,
@@ -184,9 +155,7 @@ export const getWalletDetails = async (req: Request, res: Response): Promise<voi
     try {
         const { walletId } = req.params;
 
-        const wallet = await (prisma as any).cryptoWallet.findUnique({
-            where: { id: parseInt(walletId) }
-        });
+        const wallet = await FindWalletById(parseInt(walletId));
 
         if (!wallet) {
             res.status(404).json({ error: 'Không tìm thấy ví' });

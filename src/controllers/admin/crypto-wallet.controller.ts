@@ -1,13 +1,14 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { GetActiveWallet } from 'services/admin/WalletCrypto.service';
+import { GetActiveCryptocurrency } from 'services/admin/CryptoInWallet.service';
+import { GetCryptoTransactionByOrderId, GetCryptoTransactionsForAdminWallet, getTransactionDetailsForOrder } from 'services/admin/cryptoTransaction.service';
 
-const prisma = new PrismaClient();
 
 // Get admin crypto wallet info
 export const getCryptoWalletPage = async (req: Request, res: Response): Promise<void> => {
     try {
-        // Prefer active wallet from DB so switching wallets immediately reflects in the UI
-        const activeWalletRecord = await prisma.cryptoWallet.findFirst({ where: { isActive: true } });
+        // Ưu tiên ví hoạt động từ DB để việc chuyển đổi ví được phản ánh ngay lập tức trong UI
+        const activeWalletRecord = await GetActiveWallet();
         const adminWallet = activeWalletRecord?.walletAddress || process.env.ADMIN_WALLET_ADDRESS;
 
         if (!adminWallet) {
@@ -25,28 +26,14 @@ export const getCryptoWalletPage = async (req: Request, res: Response): Promise<
             return;
         }
 
-        // Get active cryptocurrency to get current exchange rate
-        const activeCrypto = await prisma.cryptocurrency.findFirst({ where: { isActive: true } });
+        // Lấy tỷ giá từ cryptocurrency đang hoạt động
+        const activeCrypto = await GetActiveCryptocurrency();
         const exchangeRate = activeCrypto?.priceVND || 8750; // Default: 1 SGB = 8,750 VND
         console.log('Using exchange rate:', exchangeRate, 'VND per SGB');
 
-        // Query CryptoTransaction records that were sent TO this admin wallet address
-        // This ties transaction history to the selected wallet (toAddress)
-        const txs = await prisma.cryptoTransaction.findMany({
-            where: {
-                toAddress: adminWallet
-            },
-            include: {
-                order: {
-                    include: {
-                        User: true
-                    }
-                },
-                cryptocurrency: true
-            },
-            orderBy: { createdAt: 'desc' },
-            take: 50
-        });
+        // Truy vấn các bản ghi CryptoTransaction đã được gửi ĐẾN địa chỉ ví quản trị này
+        // Điều này liên kết lịch sử giao dịch với ví đã chọn (toAddress)
+        const txs = await GetCryptoTransactionsForAdminWallet(adminWallet);
 
         // Format transactions for display. Prefer amountInFiat if recorded, otherwise compute from amount
         const formattedTransactions = txs.map((tx: any) => ({
@@ -98,22 +85,11 @@ export const getCryptoWalletPage = async (req: Request, res: Response): Promise<
 // Export wallet data as CSV
 export const exportCryptoTransactions = async (req: Request, res: Response): Promise<void> => {
     try {
-        // Prefer active wallet from DB (if any)
-        const activeWalletRecord = await prisma.cryptoWallet.findFirst({ where: { isActive: true } });
+        // Ưu tiên ví hoạt động từ DB để việc chuyển đổi ví được phản ánh ngay lập tức trong UI
+        const activeWalletRecord = await GetActiveWallet();
         const adminWallet = activeWalletRecord?.walletAddress || process.env.ADMIN_WALLET_ADDRESS;
 
-        const txs = await prisma.cryptoTransaction.findMany({
-            where: adminWallet ? { toAddress: adminWallet } : {},
-            include: {
-                order: {
-                    include: {
-                        User: true
-                    }
-                },
-                cryptocurrency: true
-            },
-            orderBy: { createdAt: 'desc' }
-        });
+        const txs = await GetCryptoTransactionsForAdminWallet(adminWallet as string);
 
         // Create CSV content
         let csv = 'Mã Giao Dịch, Mã Đơn,Người Dùng,Email,Số Tiền (Crypto),Số Tiền (VND),Mã Token/Currency,Hash Giao Dịch,Ngày Tạo\n';
@@ -140,31 +116,18 @@ export const getTransactionDetails = async (req: Request, res: Response): Promis
     try {
         const { orderId } = req.params;
 
-        const order = await prisma.order.findUnique({
-            where: { id: parseInt(orderId) },
-            include: {
-                User: true,
-                orderDetails: {
-                    include: {
-                        product: true
-                    }
-                }
-            }
-        });
+        const order = await GetCryptoTransactionByOrderId(Number(orderId));
 
         if (!order) {
             res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
             return;
         }
 
-        // Get crypto transaction for this order to get actual SGB amount
-        const cryptoTx = await prisma.cryptoTransaction.findFirst({
-            where: { orderId: order.id },
-            include: { cryptocurrency: true }
-        });
+        // lay giao dịch crypto cho đơn hàng này để lấy số lượng SGB thực tế
+        const cryptoTx = await getTransactionDetailsForOrder(Number(orderId));
 
         // Get exchange rate from active cryptocurrency
-        const activeCrypto = await prisma.cryptocurrency.findFirst({ where: { isActive: true } });
+        const activeCrypto = await GetActiveCryptocurrency();
         const exchangeRate = activeCrypto?.priceVND || 8750;
 
         // Use actual amount from crypto transaction, or calculate from total price
