@@ -144,3 +144,4 @@ export const DeleteCryptocurrencyById = async (cryptoId: number) => {
         throw error;
     }
 };
+
